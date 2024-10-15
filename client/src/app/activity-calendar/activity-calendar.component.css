@@ -1,0 +1,28 @@
+/* Base styles for calendar */
+.calendar-container {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-gap: 5px;
+}
+
+/* Style for calendar cells (headers) */
+.cal-cell {
+  text-align: center;  /* Ensure text is centered in the cell */
+  padding: 10px;
+}
+
+/* Responsive font size for day names (column headers) */
+@media (max-width: 768px) {
+  .cal-cell-row.cal-header .cal-cell {
+    font-size: 0.6rem; /* Make text smaller on smaller devices */
+    padding: 5px; /* Adjust padding for better fit on smaller screens */
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .cal-cell-row.cal-header .cal-cell {
+    font-size: 0.5rem; /* Even smaller for very narrow devices */
+    padding: 3px;
+  }
+}

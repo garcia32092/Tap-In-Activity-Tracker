@@ -1,0 +1,44 @@
+<div class="container">
+    <div class="row">
+      <div class="col text-center">
+        <div class="btn-group">
+          <button class="btn btn-primary" (click)="setView(CalendarView.Month)">Month</button>
+          <button class="btn btn-primary" (click)="setView(CalendarView.Week)">Week</button>
+          <button class="btn btn-primary" (click)="setView(CalendarView.Day)">Day</button>
+        </div>
+      </div>
+    </div>
+  
+    <div class="row mt-4">
+      <div class="col">
+        <!-- Month View -->
+        <mwl-calendar-month-view
+          *ngIf="view === CalendarView.Month"
+          [viewDate]="viewDate"
+          [events]="events"
+          [refresh]="refresh"
+          (dayClicked)="dayClicked($event.day)"
+          (eventClicked)="eventClicked($event.event)">
+        </mwl-calendar-month-view>
+  
+        <!-- Week View -->
+        <mwl-calendar-week-view
+          *ngIf="view === CalendarView.Week"
+          [viewDate]="viewDate"
+          [events]="events"
+          [refresh]="refresh"
+          (eventClicked)="eventClicked($event.event)">
+        </mwl-calendar-week-view>
+  
+        <!-- Day View -->
+        <mwl-calendar-day-view
+          *ngIf="view === CalendarView.Day"
+          [viewDate]="viewDate"
+          [events]="events"
+          [refresh]="refresh"
+          (eventClicked)="eventClicked($event.event)">
+        </mwl-calendar-day-view>
+      </div>
+    </div>
+  </div>
+  
