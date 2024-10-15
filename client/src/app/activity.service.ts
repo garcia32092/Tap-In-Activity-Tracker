@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environment'; // Import environment config
 
 @Injectable({
   providedIn: 'root',
 })
 export class ActivityService {
-  private apiUrl = 'http://localhost:3000/api/activities'; // Example API URL
+  private apiUrl = `${environment.apiUrl}/activities`; // Use environment-specific API URL
 
   constructor(private http: HttpClient) {}
 
