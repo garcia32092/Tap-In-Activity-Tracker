@@ -1,0 +1,13 @@
+<h2>Log Activity</h2>
+<form [formGroup]="activityForm" (ngSubmit)="logActivity()">
+  <label for="activity">Activity</label>
+  <input id="activity" formControlName="activity" placeholder="Enter activity" required />
+
+  <label for="category">Category</label>
+  <input id="category" formControlName="category" placeholder="Enter category" required />
+
+  <label for="hour">Hour</label>
+  <input id="hour" type="time" formControlName="hour" required />
+
+  <button type="submit">Log Activity</button>
+</form>
