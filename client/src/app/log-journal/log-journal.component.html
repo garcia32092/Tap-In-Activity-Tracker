@@ -1,0 +1,6 @@
+<form [formGroup]="journalForm" (ngSubmit)="submitJournal()">
+    <label for="journalText">Journal Entry</label>
+    <textarea id="journalText" formControlName="journalText"></textarea>
+    <button type="submit">Submit</button>
+  </form>
+  
