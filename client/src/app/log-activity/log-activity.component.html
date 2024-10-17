@@ -1,13 +1,58 @@
 <h2>Log Activity</h2>
-<form [formGroup]="activityForm" (ngSubmit)="logActivity()">
-  <label for="activity">Activity</label>
-  <input id="activity" formControlName="activity" placeholder="Enter activity" required />
+<form [formGroup]="activityForm" (ngSubmit)="logActivity()" class="form-container">
+  
+  <!-- Activity Dropdown with Custom Option -->
+  <div class="form-group">
+    <label for="activity">Activity</label>
+    <select id="activity" class="form-control" formControlName="activity" (change)="checkActivity($event)">
+      <option *ngFor="let option of activities" [value]="option">{{ option }}</option>
+      <option value="Other">Other</option>
+    </select>
 
-  <label for="category">Category</label>
-  <input id="category" formControlName="category" placeholder="Enter category" required />
+    <!-- Custom Activity Input -->
+    <div *ngIf="showCustomActivity">
+      <label for="customActivity">Custom Activity</label>
+      <input id="customActivity" class="form-control" formControlName="customActivity" placeholder="Enter custom activity" />
+    </div>
+  </div>
 
-  <label for="hour">Hour</label>
-  <input id="hour" type="time" formControlName="hour" required />
+  <!-- Category Dropdown with Custom Option -->
+  <div class="form-group">
+    <label for="category">Category</label>
+    <select id="category" class="form-control" formControlName="category" (change)="checkCategory($event)">
+      <option *ngFor="let option of categories" [value]="option">{{ option }}</option>
+      <option value="Other">Other</option>
+    </select>
 
-  <button type="submit">Log Activity</button>
+    <!-- Custom Category Input -->
+    <div *ngIf="showCustomCategory">
+      <label for="customCategory">Custom Category</label>
+      <input id="customCategory" class="form-control" formControlName="customCategory" placeholder="Enter custom category" />
+    </div>
+  </div>
+
+  <!-- Date Field -->
+  <div class="form-group">
+    <label for="activityDate">Date</label>
+    <input id="activityDate" class="form-control" formControlName="activityDate" type="date">
+  </div>
+
+  <!-- Start and End Time Fields -->
+  <div class="form-group">
+    <label for="start">Start Time</label>
+    <input id="start" class="form-control" formControlName="start" type="time" required />
+  </div>
+
+  <div class="form-group">
+    <label for="end">End Time</label>
+    <input id="end" class="form-control" formControlName="end" type="time" required />
+  </div>
+
+  <!-- Optional Description Field -->
+  <div class="form-group">
+    <label for="description">Description (Optional)</label>
+    <textarea id="description" class="form-control" formControlName="description" rows="3" placeholder="Add any extra details..."></textarea>
+  </div>
+
+  <button type="submit" class="btn btn-primary mt-3">Log Activity</button>
 </form>
