@@ -45,7 +45,7 @@ export class LogActivityComponent implements OnInit {
       end: [nextHour.toTimeString().split(':').slice(0, 2).join(':'), Validators.required], // HH:mm format
       description: [''] // Optional description field
     });
-  }  
+  }
 
   checkActivity(event: any) {
     this.showCustomActivity = event.target.value === 'Other';
@@ -75,9 +75,16 @@ export class LogActivityComponent implements OnInit {
       description: formData.description // Add the description field
     });
   
-    this.activityService.logActivity(formData).subscribe(() => {
+    this.activityService.logActivity({
+      activity,
+      category,
+      description: formData.description,
+      start: formData.start,
+      end: formData.end,
+      activityDate: formData.activityDate,
+    }).subscribe(() => {
       alert('Activity logged successfully!');
       this.activityForm.reset();
     });
-  }  
+  }
 }
