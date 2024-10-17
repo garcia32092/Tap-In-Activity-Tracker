@@ -80,21 +80,30 @@ export class ActivityCalendarComponent {
   constructor(private activityService: ActivityService, private modal: NgbModal) {} // Inject the ActivityService
 
   ngOnInit() {
-    this.activityService.getActivities().subscribe((data: any[]) => {
-      console.log('Activities received:', data);
-      // Map the activities to the CalendarEvent format
-      this.events = data.map(activity => ({
-        title: activity.activity, // Assuming the activity has a name field
-        start: new Date(activity.date), // Assuming each activity has a date field
-        color: {
-          primary: '#1e90ff',
-          secondary: '#D1E8FF',
-        }
-      }));
-      this.refresh.next(); // Trigger calendar refresh
-    }, (error) => {
-      console.error('Error fetching activities:', error);
-    });
+    this.activityService.getActivities().subscribe(
+      (data: any[]) => {
+        console.log('Activities received:', data);
+  
+        // Map the activities to the CalendarEvent format
+        this.events = data.map(activity => ({
+          title: activity.activity, // Activity name as the event title
+          start: new Date(activity.activity_date + 'T' + activity.start_time), // Combine date and start time
+          end: new Date(activity.activity_date + 'T' + activity.end_time), // Combine date and end time
+          color: {
+            primary: '#1e90ff', // You can assign different colors based on category or activity type
+            secondary: '#D1E8FF',
+          },
+          meta: {
+            description: activity.description, // Store any extra data you need
+          }
+        }));
+  
+        this.refresh.next(); // Trigger calendar refresh
+      },
+      (error) => {
+        console.error('Error fetching activities:', error);
+      }
+    );
   }
 
   actions: CalendarEventAction[] = [
