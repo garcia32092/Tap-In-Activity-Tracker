@@ -201,7 +201,15 @@ export class ActivityCalendarComponent {
       }
       this.viewDate = date;
     }
+    console.log('Day clicked', date);
   }
+
+  timeClicked(date: Date) {
+    if (isSameMonth(date, this.viewDate)) {
+      this.viewDate = date;
+    }
+    console.log('Time clicked', date);
+  };
 
   addEvent(): void {
     this.events = [
