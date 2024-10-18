@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivityService } from '../activity.service';
 import { Validators } from '@angular/forms';
+import { activities, categories, activityToCategory } from './activity-data';
 
 @Component({
   selector: 'app-log-activity',
@@ -13,8 +14,9 @@ import { Validators } from '@angular/forms';
 })
 export class LogActivityComponent implements OnInit {
   activityForm!: FormGroup;
-  activities: string[] = ['Running', 'Cycling', 'Swimming', 'Yoga'];
-  categories: string[] = ['Exercise', 'Work', 'Leisure', 'Study'];
+  activities: string[] = activities;
+  categories: string[] = categories;
+  activityToCategory: Record<string, string> = activityToCategory;
   showCustomActivity = false;
   showCustomCategory = false;
 
@@ -48,9 +50,17 @@ export class LogActivityComponent implements OnInit {
   }
 
   checkActivity(event: any) {
-    this.showCustomActivity = event.target.value === 'Other';
+    const selectedActivity = event.target.value;
+    this.showCustomActivity = selectedActivity === 'Other';
+
     if (!this.showCustomActivity) {
       this.activityForm.get('customActivity')?.reset();
+
+      // Automatically set the category if there's a match
+      const mappedCategory = this.activityToCategory[selectedActivity];
+      if (mappedCategory) {
+        this.activityForm.get('category')?.setValue(mappedCategory);
+      }
     }
   }
 
