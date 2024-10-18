@@ -66,5 +66,9 @@
     <textarea id="description" class="form-control" formControlName="description" rows="3" placeholder="Add any extra details..."></textarea>
   </div>
 
+  <div *ngIf="showSuccessMessage" class="alert alert-success" role="alert">
+    Activity logged successfully!
+  </div>  
+
   <button type="submit" class="btn btn-primary mt-3" [disabled]="activityForm.invalid">Log Activity</button>
 </form>

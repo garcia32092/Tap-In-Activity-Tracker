@@ -19,6 +19,7 @@ export class LogActivityComponent implements OnInit {
   activityToCategory: Record<string, string> = activityToCategory;
   showCustomActivity = false;
   showCustomCategory = false;
+  showSuccessMessage = false;
 
   constructor(private fb: FormBuilder, private activityService: ActivityService) {}
 
@@ -47,6 +48,13 @@ export class LogActivityComponent implements OnInit {
       end: [nextHour.toTimeString().split(':').slice(0, 2).join(':'), Validators.required], // HH:mm format
       description: [''] // Optional description field
     });
+  }
+
+  showSuccessNotification() {
+    this.showSuccessMessage = true;
+    setTimeout(() => {
+      this.showSuccessMessage = false;
+    }, 4000); // Time in milliseconds (4 seconds)
   }
 
   checkActivity(event: any) {
@@ -93,8 +101,12 @@ export class LogActivityComponent implements OnInit {
       end: formData.end,
       activityDate: formData.activityDate,
     }).subscribe(() => {
-      alert('Activity logged successfully!');
-      this.activityForm.reset();
+      this.showSuccessNotification();
+      this.activityForm.get('activity')?.reset();
+      this.activityForm.get('category')?.reset();
+      this.activityForm.get('customActivity')?.reset();
+      this.activityForm.get('customCategory')?.reset();
+      this.activityForm.get('description')?.reset('');
     });
   }
 }
