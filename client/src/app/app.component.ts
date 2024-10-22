@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
-import { LogActivityComponent } from './log-activity/log-activity.component';
-import { ActivityListComponent } from './activity-list/activity-list.component';
-import { ActivityCalendarComponent } from './activity-calendar/activity-calendar.component';
+import { RouterOutlet } from '@angular/router';
+import { SidebarComponent } from './sidebar/sidebar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   templateUrl: './app.component.html',
-  imports: [LogActivityComponent, ActivityListComponent, ActivityCalendarComponent], // Import standalone components
+  imports: [RouterOutlet, SidebarComponent],
 })
 export class AppComponent {}
