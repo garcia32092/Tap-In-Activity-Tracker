@@ -80,31 +80,60 @@ export class ActivityCalendarComponent {
   constructor(private activityService: ActivityService, private modal: NgbModal) {} // Inject the ActivityService
 
   ngOnInit() {
+    // Fetch activities from the ActivityService
     this.activityService.getActivities().subscribe(
       (data: any[]) => {
         console.log('Activities received:', data);
   
-        // Map the activities to the CalendarEvent format
-        this.events = data.map(activity => ({
-          title: activity.activity, // Activity name as the event title
-          start: new Date(activity.activity_date + 'T' + activity.start_time), // Combine date and start time
-          end: new Date(activity.activity_date + 'T' + activity.end_time), // Combine date and end time
-          color: {
-            primary: '#1e90ff', // You can assign different colors based on category or activity type
-            secondary: '#D1E8FF',
-          },
-          meta: {
-            description: activity.description, // Store any extra data you need
-          }
-        }));
+        // Map the activities to the CalendarEvent format expected by angular-calendar
+        this.events = data.map((activity) => {
+          // Parse the activity_date as a Date object
+          const activityDate = new Date(activity.activity_date);
   
-        this.refresh.next(); // Trigger calendar refresh
+          // Create full start and end Date objects by combining activity_date with start_time and end_time
+          const startTime = this.combineDateAndTime(activityDate, activity.start_time);
+          const endTime = this.combineDateAndTime(activityDate, activity.end_time);
+  
+          return {
+            title: activity.activity, // Activity name as the event title
+            start: startTime, // Combined date and start time
+            end: endTime, // Combined date and end time
+            color: {
+              primary: activity.color,
+              secondary: this.adjustColorBrightness(activity.color, 1.3, 0.3)
+            },
+            actions: this.actions, // Action icons for edit/delete
+            meta: {
+              description: activity.description
+            }
+          };
+        });
+  
+        // Trigger calendar refresh
+        this.refresh.next();
       },
       (error) => {
         console.error('Error fetching activities:', error);
       }
     );
   }
+
+  // Helper function to combine date and time into a single Date object
+  combineDateAndTime(date: Date, time: string): Date {
+    const [hours, minutes, seconds] = time.split(':').map(Number);
+    const combinedDate = new Date(date);
+    combinedDate.setHours(hours, minutes, seconds || 0);
+    return combinedDate;
+  }
+
+  // Utility function to adjust color brightness for secondary shade
+  adjustColorBrightness(color: string, factor: number, alpha: number = 1): string {
+    const [r, g, b] = color.match(/\w\w/g)!.map(hex => parseInt(hex, 16));
+    const adjust = (channel: number) => Math.min(255, Math.floor(channel * factor));
+  
+    // Apply the brightness adjustment and include alpha
+    return `rgba(${adjust(r)}, ${adjust(g)}, ${adjust(b)}, ${alpha})`;
+  }  
 
   actions: CalendarEventAction[] = [
     {
