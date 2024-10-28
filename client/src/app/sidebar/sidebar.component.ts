@@ -21,11 +21,12 @@ import { RouterModule } from '@angular/router';
   ],
 })
 export class SidebarComponent {
-  isExpanded = true; // Fix for "isExpanded" error
+  isExpanded = false; // Fix for "isExpanded" error
 
   links = [
-    { label: 'Home', icon: 'home', route: '/' },
-    { label: 'Dashboard', icon: 'dashboard', route: '/log' },
-    { label: 'Settings', icon: 'settings', route: '/list' }
+    // https://fonts.google.com/icons for more icons
+    { label: 'Calendar', icon: 'calendar_today', route: '/' },
+    { label: 'Log Form', icon: 'description', route: '/log' },
+    { label: 'Activity List', icon: 'list', route: '/list' }
   ]; // Fix for "links" error
 }
