@@ -66,6 +66,12 @@
     <textarea id="description" class="form-control" formControlName="description" rows="3" placeholder="Add any extra details..."></textarea>
   </div>
 
+  <!-- Color Picker Field -->
+  <div class="form-group">
+    <label for="color">Color (Optional)</label>
+    <input id="color" class="form-control" type="color" formControlName="color" />
+  </div>
+
   <div *ngIf="showSuccessMessage" class="alert alert-success" role="alert">
     Activity logged successfully!
   </div>  
