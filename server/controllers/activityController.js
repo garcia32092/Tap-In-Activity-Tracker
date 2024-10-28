@@ -10,6 +10,7 @@ pool.query(
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     activity_date DATE NOT NULL,
+    color TEXT,
     date_created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`,
   (err) => {
@@ -23,10 +24,10 @@ pool.query(
 
 // Controller to log an activity
 const logActivity = (req, res) => {
-  const { activity, category, description, start, end, activityDate } = req.body;
+  const { activity, category, description, start, end, activityDate, color } = req.body;
   pool.query(
-    'INSERT INTO activities (activity, category, description, start_time, end_time, activity_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-    [activity, category, description, start, end, activityDate],
+    'INSERT INTO activities (activity, category, description, start_time, end_time, activity_date, color) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+    [activity, category, description, start, end, activityDate, color],
     (err, result) => {
       if (err) {
         console.error('Error logging activity:', err);
