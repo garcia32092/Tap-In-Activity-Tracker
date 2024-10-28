@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivityService } from '../activity.service';
 import { Validators } from '@angular/forms';
-import { activities, categories, activityToCategory } from './activity-data';
+import { activities, categories, activityToCategory, categoryColors } from './activity-data';
 
 @Component({
   selector: 'app-log-activity',
@@ -17,6 +17,7 @@ export class LogActivityComponent implements OnInit {
   activities: string[] = activities;
   categories: string[] = categories;
   activityToCategory: Record<string, string> = activityToCategory;
+  categoryColors: Record<string, string> = categoryColors;
   showCustomActivity = false;
   showCustomCategory = false;
   showSuccessMessage = false;
@@ -46,6 +47,7 @@ export class LogActivityComponent implements OnInit {
       activityDate: [localDate, Validators.required], // Set default date to current local date
       start: [mostRecentHour.toTimeString().split(':').slice(0, 2).join(':'), Validators.required], // HH:mm format
       end: [nextHour.toTimeString().split(':').slice(0, 2).join(':'), Validators.required], // HH:mm format
+      color: [''],
       description: [''] // Optional description field
     });
   }
@@ -68,15 +70,24 @@ export class LogActivityComponent implements OnInit {
       const mappedCategory = this.activityToCategory[selectedActivity];
       if (mappedCategory) {
         this.activityForm.get('category')?.setValue(mappedCategory);
+        this.setCategoryColor(mappedCategory);
       }
     }
   }
 
   checkCategory(event: any) {
-    this.showCustomCategory = event.target.value === 'Other';
+    const selectedCategory = event.target.value;
+    this.showCustomCategory = selectedCategory === 'Other';
+
     if (!this.showCustomCategory) {
       this.activityForm.get('customCategory')?.reset();
+      this.setCategoryColor(selectedCategory);
     }
+  }
+
+  setCategoryColor(category: string) {
+    const mappedColor = this.categoryColors[category];
+    this.activityForm.get('color')?.setValue(mappedColor);
   }
 
   logActivity() {
@@ -90,7 +101,8 @@ export class LogActivityComponent implements OnInit {
       date: formData.activityDate,
       start: formData.start,
       end: formData.end,
-      description: formData.description // Add the description field
+      description: formData.description, // Add the description field
+      color: formData.color
     });
   
     this.activityService.logActivity({
@@ -100,6 +112,7 @@ export class LogActivityComponent implements OnInit {
       start: formData.start,
       end: formData.end,
       activityDate: formData.activityDate,
+      color: formData.color
     }).subscribe(() => {
       this.showSuccessNotification();
       this.activityForm.get('activity')?.reset();
@@ -107,6 +120,7 @@ export class LogActivityComponent implements OnInit {
       this.activityForm.get('customActivity')?.reset();
       this.activityForm.get('customCategory')?.reset();
       this.activityForm.get('description')?.reset('');
+      this.activityForm.get('color')?.reset();
     });
   }
 }
