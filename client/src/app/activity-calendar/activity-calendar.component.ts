@@ -1,3 +1,4 @@
+import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -6,7 +7,6 @@ import {
   TemplateRef
 } from '@angular/core';
 import {
-  CalendarEvent,
   CalendarEventAction,
   CalendarView,
   CalendarModule,
@@ -17,8 +17,9 @@ import {
   CalendarEventTimesChangedEvent,
   CalendarEventTitleFormatter
 } from 'angular-calendar';
+import { CustomCalendarEvent } from '../shared/models/custom-calendar-event.model';
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
-import { ActivityService } from '../activity.service';
+import { ActivityService } from '../shared/services/activity.service';
 import {
   startOfDay,
   endOfDay,
@@ -54,7 +55,7 @@ const colors: Record<string, EventColor> = {
   standalone: true,
   templateUrl: './activity-calendar.component.html',
   styleUrls: ['./activity-calendar.component.css'],
-  imports: [CommonModule, CalendarModule],
+  imports: [CommonModule, CalendarModule, FormsModule],
   providers: [
     CalendarUtils,
     CalendarA11y, // Provide the CalendarA11y service
@@ -71,11 +72,20 @@ export class ActivityCalendarComponent {
   CalendarView = CalendarView;
   view: CalendarView = CalendarView.Month;
   viewDate: Date = new Date();
-  modalData!: {
-    action: string;
-    event: CalendarEvent;
-  };
+  modalData: { action: string; event: CustomCalendarEvent; startInput?: string; endInput?: string } = {
+    action: '',
+    event: {
+      start: new Date(),
+      title: '',
+      color: { primary: '#000000', secondary: '#FFFFFF' },
+      meta: { description: '' },
+      category: ''
+    } as CustomCalendarEvent,
+  };  
+  primaryColor: string = '#000000';
   refresh = new Subject<void>();
+  dayClickTimeout: any;
+  eventClickTimeout: any;
 
   constructor(private activityService: ActivityService, private modal: NgbModal) {} // Inject the ActivityService
 
@@ -105,7 +115,8 @@ export class ActivityCalendarComponent {
             actions: this.actions, // Action icons for edit/delete
             meta: {
               description: activity.description
-            }
+            },
+            category: activity.category
           };
         });
   
@@ -139,21 +150,21 @@ export class ActivityCalendarComponent {
     {
       label: '<i class="fas fa-fw fa-pencil-alt"></i>',
       a11yLabel: 'Edit',
-      onClick: ({ event }: { event: CalendarEvent }): void => {
+      onClick: ({ event }: { event: CustomCalendarEvent }): void => {
         this.handleEvent('Edited', event);
       },
     },
     {
       label: '<i class="fas fa-fw fa-trash-alt"></i>',
       a11yLabel: 'Delete',
-      onClick: ({ event }: { event: CalendarEvent }): void => {
+      onClick: ({ event }: { event: CustomCalendarEvent }): void => {
         this.events = this.events.filter((iEvent) => iEvent !== event);
         this.handleEvent('Deleted', event);
       },
     },
   ];
 
-  events: CalendarEvent[] = [
+  events: CustomCalendarEvent[] = [
     {
       start: subDays(startOfDay(new Date()), 1),
       end: addDays(new Date(), 1),
@@ -198,14 +209,69 @@ export class ActivityCalendarComponent {
     this.view = view;
   }
 
-  eventClicked(event: CalendarEvent): void {
-    console.log('Event clicked', event);
+  eventClicked(event: CustomCalendarEvent): void {
+    if (this.eventClickTimeout) {
+      clearTimeout(this.eventClickTimeout);
+      this.eventClickTimeout = null;
+      this.eventDoubleClicked(event);
+    } else {
+      this.eventClickTimeout = setTimeout(() => {
+        this.eventClickTimeout = null;
+        console.log('Single event click detected:', event);
+        // Optionally handle single-click action here, if needed
+      }, 300); // Adjust timeout for double-click detection
+    }
   }
-
-  handleEvent(action: string, event: CalendarEvent): void {
-    this.modalData = { event, action };
+  
+  eventDoubleClicked(event: CustomCalendarEvent): void {
+    this.modalData = {
+      action: 'View Details',
+      event: { ...event },
+      startInput: this.formatDateForInput(event.start),
+      endInput: this.formatDateForInput(event.end)
+    };
+    this.primaryColor = this.modalData.event.color?.primary || '#000000';
     this.modal.open(this.modalContent, { size: 'lg' });
+  }  
+
+  private formatDateForInput(date: Date | undefined): string {
+    if (!date) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }  
+
+  handleEvent(action: string, event: CustomCalendarEvent): void {
+    if (action === 'Edit' || action === 'View Details') {
+      this.modalData = { event, action };
+      this.modal.open(this.modalContent, { size: 'lg' });
+    }
   }
+  
+  saveChanges() {
+    this.modalData.event.start = new Date(this.modalData.startInput || '');
+    this.modalData.event.end = new Date(this.modalData.endInput || '');
+  
+    this.events = this.events.map(event => 
+      event === this.modalData.event ? { ...event, ...this.modalData.event } : event
+    );
+    
+    this.refresh.next();
+    
+    // Optionally, update on the backend:
+    // this.activityService.updateActivity(this.modalData.event).subscribe();
+    
+    this.modal.dismissAll();
+  }
+  
+  deleteEvent(eventToDelete: CustomCalendarEvent) {
+    this.events = this.events.filter(event => event !== eventToDelete);
+    this.refresh.next();
+    
+    // Optionally, delete from backend:
+    // this.activityService.deleteActivity(eventToDelete.id).subscribe();
+    
+    this.modal.dismissAll();
+  }  
   
   eventTimesChanged({
     event,
@@ -227,17 +293,28 @@ export class ActivityCalendarComponent {
 
   activeDayIsOpen: boolean = true;
 
-  dayClicked({ date, events }: { date: Date; events: CalendarEvent[] }): void {
+  dayClicked({ date, events }: { date: Date; events: CustomCalendarEvent[] }): void {
     if (isSameMonth(date, this.viewDate)) {
-      if (
-        (isSameDay(this.viewDate, date) && this.activeDayIsOpen === true) ||
-        events.length === 0
-      ) {
-        this.activeDayIsOpen = false;
+      // Check for double-click
+      if (this.dayClickTimeout) {
+        clearTimeout(this.dayClickTimeout);
+        this.dayClickTimeout = null;
+  
+        // Switch to day view on double-click
+        this.view = CalendarView.Day;
+        this.viewDate = date;
       } else {
-        this.activeDayIsOpen = true;
+        // Single-click behavior
+        this.dayClickTimeout = setTimeout(() => {
+          this.dayClickTimeout = null;
+          if ((isSameDay(this.viewDate, date) && this.activeDayIsOpen) || events.length === 0) {
+            this.activeDayIsOpen = false;
+          } else {
+            this.activeDayIsOpen = true;
+          }
+          this.viewDate = date;
+        }, 300); // Adjust the timeout duration as needed
       }
-      this.viewDate = date;
     }
     console.log('Day clicked', date);
   }
@@ -264,10 +341,6 @@ export class ActivityCalendarComponent {
         },
       },
     ];
-  }
-
-  deleteEvent(eventToDelete: CalendarEvent) {
-    this.events = this.events.filter((event) => event !== eventToDelete);
   }
 
   closeOpenMonthViewDay() {
