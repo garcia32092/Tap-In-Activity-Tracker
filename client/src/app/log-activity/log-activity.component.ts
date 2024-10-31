@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { ActivityService } from '../activity.service';
+import { ActivityService } from '../shared/services/activity.service';
 import { Validators } from '@angular/forms';
 import { activities, categories, activityToCategory, categoryColors } from './activity-data';
 
