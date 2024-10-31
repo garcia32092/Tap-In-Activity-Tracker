@@ -92,3 +92,42 @@
     </div>
   </div>
 </div>
+
+
+<!-- Template for editing modal -->
+<ng-template #modalContent let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">Activity Details</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <!-- Title Field -->
+    <label>Title:</label>
+    <input type="text" [(ngModel)]="modalData.event.title" class="form-control" />
+
+    <!-- Start Date/Time Field -->
+    <label>Start:</label>
+    <input type="datetime-local" [(ngModel)]="modalData.startInput" class="form-control" />
+
+    <!-- End Date/Time Field -->
+    <label>End:</label>
+    <input type="datetime-local" [(ngModel)]="modalData.endInput" class="form-control" />
+
+    <!-- Description Field -->
+    <label>Description:</label>
+    <textarea [(ngModel)]="modalData.event.meta.description" class="form-control"></textarea>
+
+    <!-- Category Field -->
+    <label>Category:</label>
+    <input type="text" [(ngModel)]="modalData.event.category" class="form-control" />
+
+    <!-- Color Field -->
+    <label>Color:</label>
+    <input type="color" [(ngModel)]="primaryColor" class="form-control" />
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" (click)="saveChanges()">Save changes</button>
+    <button type="button" class="btn btn-danger" (click)="deleteEvent(modalData.event)">Delete</button>
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancel</button>
+  </div>
+</ng-template>
