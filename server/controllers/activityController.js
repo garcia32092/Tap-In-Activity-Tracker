@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { format } = require('date-fns');
 
 // Create activities table if it doesn't exist
 pool.query(
@@ -51,4 +52,55 @@ const getActivities = (req, res) => {
   });
 };
 
-module.exports = { logActivity, getActivities };
+// Controller to delete an activity
+const deleteActivity = (req, res) => {
+  const { id } = req.params;
+  
+  pool.query(
+    'DELETE FROM activities WHERE id = $1 RETURNING *',
+    [id],
+    (err, result) => {
+      if (err) {
+        console.error('Error deleting activity:', err);
+        res.status(500).json({ error: 'Database error' });
+      } else if (result.rowCount === 0) {
+        res.status(404).json({ error: 'Activity not found' });
+      } else {
+        res.status(200).json({ message: 'Activity deleted successfully', activity: result.rows[0] });
+      }
+    }
+  );
+};
+
+// Controller to update an activity
+const updateActivity = (req, res) => {
+  const { id } = req.params;
+  const { title, category, meta, start, end, color } = req.body;
+
+  const activity = title;
+  const description = meta.description;
+  const formattedStart = format(new Date(start), 'HH:mm:ss');
+  const formattedEnd = format(new Date(end), 'HH:mm:ss');
+  const formattedActivityDate = format(new Date(start), 'yyyy-MM-dd');
+  const primaryColor = color.primary;
+
+  pool.query(
+    `UPDATE activities 
+     SET activity = $1, category = $2, description = $3, start_time = $4, end_time = $5, activity_date = $6, color = $7 
+     WHERE id = $8 
+     RETURNING *`,
+    [activity, category, description, formattedStart, formattedEnd, formattedActivityDate, primaryColor, id],
+    (err, result) => {
+      if (err) {
+        console.error('Error updating activity:', err);
+        res.status(500).json({ error: 'Database error' });
+      } else if (result.rowCount === 0) {
+        res.status(404).json({ error: 'Activity not found' });
+      } else {
+        res.status(200).json({ message: 'Activity updated successfully', activity: result.rows[0] });
+      }
+    }
+  );
+};
+
+module.exports = { logActivity, getActivities, deleteActivity, updateActivity };
