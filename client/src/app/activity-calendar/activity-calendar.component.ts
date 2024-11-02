@@ -33,6 +33,7 @@ import {
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject } from 'rxjs';
 import { EventColor } from 'calendar-utils';
+import { combineDateAndTime, formatDateForInput } from '../shared/utils/date-utils';
 
 const colors: Record<string, EventColor> = {
   red: {
@@ -69,6 +70,7 @@ const colors: Record<string, EventColor> = {
 })
 export class ActivityCalendarComponent {
   @ViewChild('modalContent', { static: true }) modalContent!: TemplateRef<any>;
+  @ViewChild('confirmDeleteModal', { static: true }) confirmDeleteModal!: TemplateRef<any>;
   CalendarView = CalendarView;
   view: CalendarView = CalendarView.Month;
   viewDate: Date = new Date();
@@ -86,11 +88,16 @@ export class ActivityCalendarComponent {
   refresh = new Subject<void>();
   dayClickTimeout: any;
   eventClickTimeout: any;
+  selectedEventToDelete: CustomCalendarEvent | null = null;
 
   constructor(private activityService: ActivityService, private modal: NgbModal) {} // Inject the ActivityService
 
   ngOnInit() {
     // Fetch activities from the ActivityService
+    this.getActivities();
+  }
+
+  getActivities() {
     this.activityService.getActivities().subscribe(
       (data: any[]) => {
         console.log('Activities received:', data);
@@ -101,10 +108,11 @@ export class ActivityCalendarComponent {
           const activityDate = new Date(activity.activity_date);
   
           // Create full start and end Date objects by combining activity_date with start_time and end_time
-          const startTime = this.combineDateAndTime(activityDate, activity.start_time);
-          const endTime = this.combineDateAndTime(activityDate, activity.end_time);
+          const startTime = combineDateAndTime(activityDate, activity.start_time);
+          const endTime = combineDateAndTime(activityDate, activity.end_time);
   
           return {
+            id: activity.id,
             title: activity.activity, // Activity name as the event title
             start: startTime, // Combined date and start time
             end: endTime, // Combined date and end time
@@ -127,14 +135,6 @@ export class ActivityCalendarComponent {
         console.error('Error fetching activities:', error);
       }
     );
-  }
-
-  // Helper function to combine date and time into a single Date object
-  combineDateAndTime(date: Date, time: string): Date {
-    const [hours, minutes, seconds] = time.split(':').map(Number);
-    const combinedDate = new Date(date);
-    combinedDate.setHours(hours, minutes, seconds || 0);
-    return combinedDate;
   }
 
   // Utility function to adjust color brightness for secondary shade
@@ -227,18 +227,12 @@ export class ActivityCalendarComponent {
     this.modalData = {
       action: 'View Details',
       event: { ...event },
-      startInput: this.formatDateForInput(event.start),
-      endInput: this.formatDateForInput(event.end)
+      startInput: formatDateForInput(event.start),
+      endInput: formatDateForInput(event.end)
     };
     this.primaryColor = this.modalData.event.color?.primary || '#000000';
     this.modal.open(this.modalContent, { size: 'lg' });
-  }  
-
-  private formatDateForInput(date: Date | undefined): string {
-    if (!date) return '';
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  }  
+  }
 
   handleEvent(action: string, event: CustomCalendarEvent): void {
     if (action === 'Edit' || action === 'View Details') {
@@ -251,27 +245,39 @@ export class ActivityCalendarComponent {
     this.modalData.event.start = new Date(this.modalData.startInput || '');
     this.modalData.event.end = new Date(this.modalData.endInput || '');
   
-    this.events = this.events.map(event => 
-      event === this.modalData.event ? { ...event, ...this.modalData.event } : event
+    this.activityService.updateActivity(this.modalData.event).subscribe(
+      (updatedEvent) => {
+        // Update the event in the local events array
+        this.events = this.events.map(event => 
+          event.id === updatedEvent.activity.id ? updatedEvent.activity : event
+        );
+        this.modal.dismissAll();
+        // Re-fetch all activities from the server after deletion
+        this.getActivities();
+      },
+      (error) => console.error('Error updating activity:', error)
     );
-    
-    this.refresh.next();
-    
-    // Optionally, update on the backend:
-    // this.activityService.updateActivity(this.modalData.event).subscribe();
-    
+  }
+
+  openDeleteConfirmation(event: CustomCalendarEvent) {
+    this.selectedEventToDelete = event;
+    this.modal.open(this.confirmDeleteModal, { size: 'sm' });
+  }
+
+  confirmDelete() {
+    if (this.selectedEventToDelete) {
+      this.activityService.deleteActivity(this.selectedEventToDelete.id!).subscribe(
+        () => {
+          // Re-fetch all activities from the server after deletion
+          this.getActivities();
+        },
+        (error) => {
+          console.error('Error deleting activity:', error);
+        }
+      );
+    }
     this.modal.dismissAll();
   }
-  
-  deleteEvent(eventToDelete: CustomCalendarEvent) {
-    this.events = this.events.filter(event => event !== eventToDelete);
-    this.refresh.next();
-    
-    // Optionally, delete from backend:
-    // this.activityService.deleteActivity(eventToDelete.id).subscribe();
-    
-    this.modal.dismissAll();
-  }  
   
   eventTimesChanged({
     event,
@@ -345,5 +351,5 @@ export class ActivityCalendarComponent {
 
   closeOpenMonthViewDay() {
     this.activeDayIsOpen = false;
-  }  
+  }
 }
