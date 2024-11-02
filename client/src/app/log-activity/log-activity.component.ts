@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivityService } from '../shared/services/activity.service';
 import { Validators } from '@angular/forms';
-import { activities, categories, activityToCategory, categoryColors } from './activity-data';
+import { activities, categories, activityToCategory, categoryColors } from '../shared/utils/activity-data';
 
 @Component({
   selector: 'app-log-activity',
