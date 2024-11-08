@@ -1,6 +1,72 @@
-<form [formGroup]="winsForm" (ngSubmit)="submitWins()">
-    <label for="smallWins">Small Win</label>
-    <input id="smallWins" formControlName="smallWins" type="text">
-    <button type="submit">Submit</button>
-  </form>
+<form [formGroup]="winsForm" (ngSubmit)="submitWins()" class="form-container">
   
+  <!-- Gratitude Fields -->
+  <div class="form-group">
+    <label>3 Things You’re Grateful For:</label>
+    <input class="form-control" formControlName="gratitude1" placeholder="Gratitude #1" />
+    <input class="form-control mt-2" formControlName="gratitude2" placeholder="Gratitude #2" />
+    <input class="form-control mt-2" formControlName="gratitude3" placeholder="Gratitude #3" />
+  </div>
+
+  <!-- Goals for the Day -->
+  <div class="form-group">
+    <label>3 Things You Plan to Accomplish Today:</label>
+    <input class="form-control" formControlName="goal1" placeholder="Goal #1" />
+    <input class="form-control mt-2" formControlName="goal2" placeholder="Goal #2" />
+    <input class="form-control mt-2" formControlName="goal3" placeholder="Goal #3" />
+  </div>
+
+  <!-- Yes/No Questions -->
+  <div class="form-group">
+    <label>Did you exercise today?</label>
+    <div>
+      <input type="radio" formControlName="exercise" value="yes" /> Yes
+      <input type="radio" formControlName="exercise" value="no" /> No
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Did you consume educational content?</label>
+    <div>
+      <input type="radio" formControlName="education" value="yes" /> Yes
+      <input type="radio" formControlName="education" value="no" /> No
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Did you post on social media?</label>
+    <div>
+      <input type="radio" formControlName="socialMedia" value="yes" /> Yes
+      <input type="radio" formControlName="socialMedia" value="no" /> No
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Did you work on music?</label>
+    <div>
+      <input type="radio" formControlName="music" value="yes" /> Yes
+      <input type="radio" formControlName="music" value="no" /> No
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Did you complete all of your goals?</label>
+    <div>
+      <input type="radio" formControlName="allGoals" value="yes" /> Yes
+      <input type="radio" formControlName="allGoals" value="no" /> No
+    </div>
+  </div>
+
+  <!-- Date Field -->
+  <div class="form-group">
+    <label for="date">Date</label>
+    <input id="date" class="form-control" formControlName="date" type="date" />
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="showSuccessMessage" class="alert alert-success" role="alert">
+    Small wins logged successfully!
+  </div>  
+
+  <button type="submit" class="btn btn-primary mt-3" [disabled]="winsForm.invalid">Log Small Wins</button>
+</form>
