@@ -14,8 +14,8 @@ import { activities, categories, activityToCategory, categoryColors } from '../s
 })
 export class LogActivityComponent implements OnInit {
   activityForm!: FormGroup;
-  activities: string[] = activities;
-  categories: string[] = categories;
+  activities = activities;
+  categories = categories;
   activityToCategory: Record<string, string> = activityToCategory;
   categoryColors: Record<string, string> = categoryColors;
   showCustomActivity = false;
