@@ -1,4 +1,6 @@
-export const activities = ['Running', 'Cycling', 'Swimming', 'Yoga'];
+// activity-data.ts
+
+export const activities = ['Running', 'Cycling', 'Swimming', 'Yoga'] as const;
 
 export const categories = [
   'Health & Fitness', 
@@ -12,9 +14,9 @@ export const categories = [
   'Shopping', 
   'Cooking & Eating', 
   'Sleep'
-];
+] as const;
 
-export const activityToCategory = {
+export const activityToCategory: Record<string, string> = {
   'Running': 'Health & Fitness',
   'Cycling': 'Health & Fitness',
   'Swimming': 'Health & Fitness',
@@ -22,7 +24,7 @@ export const activityToCategory = {
   // Add more mappings as needed
 };
 
-export const categoryColors = {
+export const categoryColors: Record<string, string> = {
   'Health & Fitness': '#1e90ff',
   'Productivity': '#ffa500',
   'Leisure': '#ff6347',
@@ -36,3 +38,10 @@ export const categoryColors = {
   'Sleep': '#708090',
   // Add more colors if needed
 };
+
+// Helper function to get activity data
+export function getActivityData(activity: string) {
+  const category = activityToCategory[activity] || 'Uncategorized';
+  const color = categoryColors[category] || '#000000'; // Default to black if not found
+  return { category, color };
+}
