@@ -27,8 +27,8 @@ export class SidebarComponent {
 
   links = [
     // https://fonts.google.com/icons for more icons
-    { label: 'Calendar', icon: 'calendar_today', route: '/' },
-    { label: 'Log Form', icon: 'description', route: '/log' },
+    { label: 'Dashboard', icon: 'dashboard', route: '/' },
+    { label: 'Calendar', icon: 'calendar_today', route: '/calendar' },
     { label: 'Activity List', icon: 'list', route: '/list' }
   ]; // Fix for "links" error
 }
