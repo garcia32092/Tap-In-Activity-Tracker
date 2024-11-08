@@ -1,0 +1,64 @@
+<div class="dashboard-container">
+  <!-- Log Buttons Section -->
+  <div class="log-buttons">
+    <button routerLink="/log-activity">Log Activity</button>
+    <button routerLink="/log-journal">Log Journal</button>
+  </div>
+
+  <!-- Toggle Switches Section -->
+  <div class="toggles-section">
+    <h3>Daily Habits</h3>
+
+    <div class="toggle-item">
+      <label>Did you exercise?</label>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-item">
+      <label>Did you consume educational content?</label>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-item">
+      <label>Did you post on social media?</label>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-item">
+      <label>Did you work on music?</label>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-item">
+      <label>Did you complete all of your goals?</label>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Quick-start Activity Buttons Section -->
+  <div class="quick-activities">
+    <h3>Quick Start Activities</h3>
+    
+    <!-- Dynamic activity buttons -->
+    <div *ngFor="let activity of predefinedActivities" class="quick-activity">
+      <label [style.color]="activity.color">{{ activity.name }}</label>
+      <button *ngIf="!activity.inProgress" (click)="startActivity(activity.name)">Start</button>
+      <button *ngIf="activity.inProgress" (click)="endActivity(activity.name)">End</button>
+    </div>
+  </div>
+</div>
