@@ -1,6 +1,36 @@
-<form [formGroup]="journalForm" (ngSubmit)="submitJournal()">
-    <label for="journalText">Journal Entry</label>
-    <textarea id="journalText" formControlName="journalText"></textarea>
-    <button type="submit">Submit</button>
-  </form>
+<form [formGroup]="journalForm" (ngSubmit)="submitJournal()" class="form-container">
   
+  <!-- Journal Entry Field -->
+  <div class="form-group">
+    <label for="journalEntry">Journal Entry</label>
+    <textarea id="journalEntry" class="form-control" formControlName="journalEntry" rows="5" placeholder="Write your thoughts..." [class.is-invalid]="journalForm.get('journalEntry')?.touched && journalForm.get('journalEntry')?.invalid"></textarea>
+    <div *ngIf="journalForm.get('journalEntry')?.touched && journalForm.get('journalEntry')?.invalid" class="invalid-feedback">
+      Journal entry is required.
+    </div>
+  </div>
+
+  <!-- Date Field -->
+  <div class="form-group">
+    <label for="date">Date</label>
+    <input id="date" class="form-control" formControlName="date" type="date" [class.is-invalid]="journalForm.get('date')?.touched && journalForm.get('date')?.invalid">
+    <div *ngIf="journalForm.get('date')?.touched && journalForm.get('date')?.invalid" class="invalid-feedback">
+      Date is required.
+    </div>
+  </div>
+
+  <!-- Time Field -->
+  <div class="form-group">
+    <label for="time">Time</label>
+    <input id="time" class="form-control" formControlName="time" type="time" [class.is-invalid]="journalForm.get('time')?.touched && journalForm.get('time')?.invalid">
+    <div *ngIf="journalForm.get('time')?.touched && journalForm.get('time')?.invalid" class="invalid-feedback">
+      Time is required.
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="showSuccessMessage" class="alert alert-success" role="alert">
+    Journal entry logged successfully!
+  </div>  
+
+  <button type="submit" class="btn btn-primary mt-3" [disabled]="journalForm.invalid">Log Journal Entry</button>
+</form>
