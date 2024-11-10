@@ -244,6 +244,11 @@ export class ActivityCalendarComponent {
   saveChanges() {
     this.modalData.event.start = new Date(this.modalData.startInput || '');
     this.modalData.event.end = new Date(this.modalData.endInput || '');
+
+    this.modalData.event.color = {
+      primary: this.primaryColor,
+      secondary: this.adjustColorBrightness(this.primaryColor, 1.3, 0.3)
+    }
   
     this.activityService.updateActivity(this.modalData.event).subscribe(
       (updatedEvent) => {
@@ -251,6 +256,7 @@ export class ActivityCalendarComponent {
         this.events = this.events.map(event => 
           event.id === updatedEvent.activity.id ? updatedEvent.activity : event
         );
+        console.log('Event saved:', updatedEvent);
         this.modal.dismissAll();
         // Re-fetch all activities from the server after deletion
         this.getActivities();
