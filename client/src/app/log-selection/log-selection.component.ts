@@ -12,17 +12,54 @@ import { ActivityService } from '../shared/services/activity.service';
   styleUrls: ['./log-selection.component.css']
 })
 export class LogSelectionComponent {
-  predefinedActivities = activities.map(activity => ({
-    name: activity,
-    inProgress: false,
-    startTime: null as Date | null,  // Set startTime as nullable Date type
-    ...getActivityData(activity)  // Use helper function to get category and color
-  }));
+  groupedActivities: { [key: string]: any[] } = {};
+
+  toggles = {
+    exercise: false,
+    education: false,
+    socialMedia: false,
+    music: false,
+    allGoals: false,
+  };
 
   constructor(private activityService: ActivityService) {}
 
+  ngOnInit() {
+    this.groupActivitiesByCategory();
+    this.loadTodayActivities();
+  }
+
+  groupActivitiesByCategory() {
+    activities.forEach(activity => {
+      const { category, color } = getActivityData(activity);
+
+      // Initialize the category array if it doesn't exist
+      if (!this.groupedActivities[category]) {
+        this.groupedActivities[category] = [];
+      }
+
+      // Push the activity with its details into the appropriate category
+      this.groupedActivities[category].push({
+        name: activity,
+        inProgress: false,
+        startTime: null as Date | null,
+        color
+      });
+    });
+  }
+
+  loadTodayActivities() {
+    this.activityService.getTodayActivities().subscribe((activities) => {
+      this.toggles.exercise = activities.some(activity => activity.category === 'Health & Fitness');
+      this.toggles.education = activities.some(activity => activity.category === 'Education & Study');
+      this.toggles.socialMedia = activities.some(activity => activity.activity === 'Social Media');
+      this.toggles.music = activities.some(activity => activity.activity === 'Making Music');
+      this.toggles.allGoals = this.toggles.education && this.toggles.exercise && this.toggles.music && this.toggles.socialMedia;
+    });
+  }
+
   startActivity(activityName: string) {
-    const activity = this.predefinedActivities.find(act => act.name === activityName);
+    const activity = Object.values(this.groupedActivities).flat().find(act => act.name === activityName);
     if (activity) {
       const startTime = new Date();
       activity.inProgress = true;
@@ -30,7 +67,7 @@ export class LogSelectionComponent {
 
       this.activityService.logActivity({
         activity: activityName,
-        category: activity.category,
+        category: getActivityData(activityName).category,
         start: this.formatTime(startTime),
         activityDate: this.formatDate(startTime),
         end: null,
@@ -41,13 +78,13 @@ export class LogSelectionComponent {
   }
 
   endActivity(activityName: string) {
-    const activity = this.predefinedActivities.find(act => act.name === activityName);
-    if (activity && activity.startTime) { // Ensure startTime is not null
+    const activity = Object.values(this.groupedActivities).flat().find(act => act.name === activityName);
+    if (activity && activity.startTime) {
       const endTime = new Date();
       this.activityService.logActivity({
         activity: activityName,
-        category: activity.category,
-        start: this.formatTime(activity.startTime), // Now type-safe
+        category: getActivityData(activityName).category,
+        start: this.formatTime(activity.startTime),
         end: this.formatTime(endTime),
         activityDate: this.formatDate(endTime),
         color: activity.color,
