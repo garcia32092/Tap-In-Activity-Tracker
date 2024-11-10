@@ -1,5 +1,5 @@
 const express = require('express');
-const { logActivity, getActivities, deleteActivity, updateActivity } = require('../controllers/activityController');
+const { logActivity, getActivities, deleteActivity, updateActivity, getTodayActivities } = require('../controllers/activityController');
 const router = express.Router();
 
 // Route to log an activity
@@ -13,5 +13,8 @@ router.delete('/:id', deleteActivity);
 
 // Route to update an activity by ID
 router.put('/:id', updateActivity);
+
+// Route to fetch activities for current date
+router.get('/today', getTodayActivities);
 
 module.exports = router;
