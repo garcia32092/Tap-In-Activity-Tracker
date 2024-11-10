@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { JournalService } from '../shared/services/journal.service';
 
 @Component({
   selector: 'app-log-journal',
@@ -13,7 +14,7 @@ export class LogJournalComponent implements OnInit {
   journalForm!: FormGroup;
   showSuccessMessage = false;
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, private journalService: JournalService) {}
 
   ngOnInit() {
     const now = new Date();
@@ -35,21 +36,22 @@ export class LogJournalComponent implements OnInit {
   submitJournal() {
     if (this.journalForm.valid) {
       const formData = this.journalForm.value;
-      console.log('Journal Entry:', {
-        entry: formData.journalEntry,
-        date: formData.date,
-        time: formData.time
-      });
-      
-      this.showSuccessMessage = true;
-      setTimeout(() => this.showSuccessMessage = false, 4000);
+      this.journalService.logJournal({
+        journal_entry: formData.journalEntry,
+        journal_date: formData.date,
+        journal_time: formData.time
+      }).subscribe(() => {
+            console.log('Journal Entry Submitted:');
+            this.showSuccessMessage = true;
+            setTimeout(() => this.showSuccessMessage = false, 4000);
 
-      // Reset form after submission
-      this.journalForm.reset({
-        journalEntry: '',
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toTimeString().split(':').slice(0, 2).join(':')
-      });
+            // Reset form after submission
+            this.journalForm.reset({
+              journalEntry: '',
+              journal_date: new Date().toISOString().split('T')[0],
+              journal_time: new Date().toTimeString().split(':').slice(0, 2).join(':')
+            });
+          });
     }
   }
 }
