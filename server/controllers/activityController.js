@@ -103,4 +103,20 @@ const updateActivity = (req, res) => {
   );
 };
 
-module.exports = { logActivity, getActivities, deleteActivity, updateActivity };
+const getTodayActivities = (req, res) => {
+  const today = new Date().toISOString().slice(0, 10); // format as YYYY-MM-DD
+  pool.query(
+    'SELECT * FROM activities WHERE activity_date = $1',
+    [today],
+    (err, result) => {
+      if (err) {
+        console.error('Error fetching today\'s activities:', err);
+        res.status(500).json({ error: 'Database error' });
+      } else {
+        res.json(result.rows);
+      }
+    }
+  );
+};
+
+module.exports = { logActivity, getActivities, deleteActivity, updateActivity, getTodayActivities };
