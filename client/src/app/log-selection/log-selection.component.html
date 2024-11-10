@@ -8,43 +8,10 @@
   <!-- Toggle Switches Section -->
   <div class="toggles-section">
     <h3>Daily Habits</h3>
-
-    <div class="toggle-item">
-      <label>Did you exercise?</label>
+    <div class="toggle-item" *ngFor="let toggle of toggles | keyvalue">
+      <label>{{ toggle.key.replace('_', ' ') | titlecase }}?</label>
       <label class="switch">
-        <input type="checkbox">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="toggle-item">
-      <label>Did you consume educational content?</label>
-      <label class="switch">
-        <input type="checkbox">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="toggle-item">
-      <label>Did you post on social media?</label>
-      <label class="switch">
-        <input type="checkbox">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="toggle-item">
-      <label>Did you work on music?</label>
-      <label class="switch">
-        <input type="checkbox">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="toggle-item">
-      <label>Did you complete all of your goals?</label>
-      <label class="switch">
-        <input type="checkbox">
+        <input type="checkbox" [checked]="toggle.value" disabled>
         <span class="slider"></span>
       </label>
     </div>
@@ -52,13 +19,16 @@
 
   <!-- Quick-start Activity Buttons Section -->
   <div class="quick-activities">
-    <h3>Quick Start Activities</h3>
     
-    <!-- Dynamic activity buttons -->
-    <div *ngFor="let activity of predefinedActivities" class="quick-activity">
-      <label [style.color]="activity.color">{{ activity.name }}</label>
-      <button *ngIf="!activity.inProgress" (click)="startActivity(activity.name)">Start</button>
-      <button *ngIf="activity.inProgress" (click)="endActivity(activity.name)">End</button>
+    <!-- Grouped activity buttons by category -->
+    <div *ngFor="let category of groupedActivities | keyvalue">
+      <h4>{{ category.key }}</h4> <!-- Category header -->
+      
+      <div *ngFor="let activity of category.value" class="quick-activity">
+        <label [style.color]="activity.color">{{ activity.name }}</label>
+        <button *ngIf="!activity.inProgress" (click)="startActivity(activity.name)">Start</button>
+        <button *ngIf="activity.inProgress" (click)="endActivity(activity.name)">End</button>
+      </div>
     </div>
   </div>
 </div>
