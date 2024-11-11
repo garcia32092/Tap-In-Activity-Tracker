@@ -5,6 +5,7 @@ import { ActivityListComponent } from './activity-list/activity-list.component';
 import { LogSelectionComponent } from './log-selection/log-selection.component';
 import { LogJournalComponent } from './log-journal/log-journal.component';
 import { LogSmallWinsComponent } from './log-smallwins/log-smallwins.component';
+import { ActivityChartComponent } from './activity-chart/activity-chart.component';
 
 export const routes: Routes = [
   { path: '', component: LogSelectionComponent },
@@ -13,5 +14,6 @@ export const routes: Routes = [
   { path: 'log-activity', component: LogActivityComponent },
   { path: 'log-journal', component: LogJournalComponent },
   { path: 'log-small-wins', component: LogSmallWinsComponent },
+  { path: 'chart', component: ActivityChartComponent },
   { path: '**', redirectTo: '' },
 ];
