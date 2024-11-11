@@ -29,6 +29,7 @@ export class SidebarComponent {
     // https://fonts.google.com/icons for more icons
     { label: 'Dashboard', icon: 'dashboard', route: '/' },
     { label: 'Calendar', icon: 'calendar_today', route: '/calendar' },
+    { label: 'Chart', icon: 'insert_chart', route: '/chart' },
     { label: 'Activity List', icon: 'list', route: '/list' }
   ]; // Fix for "links" error
 }
