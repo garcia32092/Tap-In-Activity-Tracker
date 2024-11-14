@@ -1,1 +1,33 @@
-<p>activity-chart works!</p>
+<div class="chart-controls">
+  <!-- Range Selector -->
+  <label for="range">Select Range:</label>
+  <select id="range" (change)="onRangeChange($event)">
+    <option value="day">Day</option>
+    <option value="week">Week</option>
+    <option value="month" selected>Month</option>
+    <option value="year">Year</option>
+    <option value="custom">Custom</option>
+  </select>
+
+  <!-- Custom Date Range -->
+  <div *ngIf="isCustomRange" class="custom-date-range">
+    <label for="start">Start Date:</label>
+    <input id="start" type="date" formControlName="startDate" (change)="onCustomDateChange()" />
+    <label for="end">End Date:</label>
+    <input id="end" type="date" formControlName="endDate" (change)="onCustomDateChange()" />
+  </div>
+
+  <!-- Chart Type Selector -->
+  <label for="chartType">Chart Type:</label>
+  <select id="chartType" (change)="onChartTypeChange($event)">
+    <option value="pie">Pie</option>
+    <option value="doughnut">Doughnut</option>
+    <option value="line">Line</option>
+    <option value="bar">Bar</option>
+  </select>
+</div>
+
+<!-- Chart Container -->
+<div class="chart-container">
+  <canvas #activityChart></canvas>
+</div>
