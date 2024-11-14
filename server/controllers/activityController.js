@@ -104,7 +104,13 @@ const updateActivity = (req, res) => {
 };
 
 const getTodayActivities = (req, res) => {
-  const today = new Date().toISOString().slice(0, 10); // format as YYYY-MM-DD
+  const now = new Date();
+  
+  // Format the current date as YYYY-MM-DD without converting to UTC
+  const today = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
+  
   pool.query(
     'SELECT * FROM activities WHERE activity_date = $1',
     [today],
@@ -119,4 +125,63 @@ const getTodayActivities = (req, res) => {
   );
 };
 
-module.exports = { logActivity, getActivities, deleteActivity, updateActivity, getTodayActivities };
+// Controller function to get activities by range
+const getActivitiesByRange = async (req, res) => {
+  const { range, start, end } = req.query;
+  console.log('Range:', range);
+  console.log('Start:', start);
+  console.log('End:', end);
+  let startDate, endDate;
+
+  try {
+    if (range) {
+      // Get dates based on range type (day, week, month)
+      ({ startDate, endDate } = getDateRange(range));
+    } else if (start && end) {
+      // Use provided start and end dates for custom range
+      startDate = new Date(start);
+      console.log(startDate);
+      endDate = new Date(end);
+      console.log(endDate);
+    } else {
+      return res.status(400).json({ error: 'Invalid parameters' });
+    }
+
+    const query = `
+      SELECT * FROM activities
+      WHERE activity_date BETWEEN $1 AND $2
+      ORDER BY activity_date DESC
+    `;
+
+    const result = await pool.query(query, [startDate, endDate]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Helper function to calculate date ranges
+const getDateRange = (range) => {
+  const now = new Date();
+  let startDate;
+  
+  switch (range) {
+    case 'day':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case 'week':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      break;
+    default:
+      throw new Error('Invalid range type');
+  }
+
+  return { startDate, endDate: now };
+};
+
+module.exports = { logActivity, getActivities, deleteActivity, updateActivity, getTodayActivities,  getActivitiesByRange };
