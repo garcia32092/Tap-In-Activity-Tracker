@@ -61,46 +61,49 @@ export class LogSelectionComponent {
   startActivity(activityName: string) {
     const activity = Object.values(this.groupedActivities).flat().find(act => act.name === activityName);
     if (activity) {
-      const startTime = new Date();
+      const now = new Date();
+  
       activity.inProgress = true;
-      activity.startTime = startTime;
-
+      activity.startTime = now;
+  
       this.activityService.logActivity({
         activity: activityName,
         category: getActivityData(activityName).category,
-        start: this.formatTime(startTime),
-        activityDate: this.formatDate(startTime),
+        start: this.formatLocalTime(now),
+        activityDate: this.formatLocalDate(now),
         end: null,
         color: activity.color,
         description: ''
-      }).subscribe(() => console.log(`${activityName} started at ${startTime}`));
+      }).subscribe(() => console.log(`${activityName} started at ${this.formatLocalDate(now)}`));
     }
   }
-
+  
   endActivity(activityName: string) {
     const activity = Object.values(this.groupedActivities).flat().find(act => act.name === activityName);
     if (activity && activity.startTime) {
-      const endTime = new Date();
+      const now = new Date();
       this.activityService.logActivity({
         activity: activityName,
         category: getActivityData(activityName).category,
-        start: this.formatTime(activity.startTime),
-        end: this.formatTime(endTime),
-        activityDate: this.formatDate(endTime),
+        start: this.formatLocalTime(activity.startTime),
+        end: this.formatLocalTime(now),
+        activityDate: this.formatLocalDate(now),
         color: activity.color,
         description: ''
-      }).subscribe(() => console.log(`${activityName} ended at ${endTime}`));
-
+      }).subscribe(() => console.log(`${activityName} ended at ${this.formatLocalDate(now)}`));
+  
       activity.inProgress = false;
       activity.startTime = null;
     }
   }
-
-  formatTime(date: Date): string {
-    return date.toTimeString().slice(0, 5);
+  
+  // Format to local time
+  formatLocalTime(date: Date): string {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
-
-  formatDate(date: Date): string {
-    return date.toISOString().slice(0, 10);
-  }
+  
+  // Format to local date
+  formatLocalDate(date: Date): string {
+    return date.toLocaleDateString('en-CA'); // 'en-CA' for YYYY-MM-DD format
+  }  
 }
