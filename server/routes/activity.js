@@ -1,12 +1,19 @@
 const express = require('express');
-const { logActivity, getActivities, deleteActivity, updateActivity, getTodayActivities } = require('../controllers/activityController');
+const {
+    logActivity,
+    getActivities,
+    deleteActivity,
+    updateActivity,
+    getTodayActivities,
+    getActivitiesByRange
+} = require('../controllers/activityController');
 const router = express.Router();
 
 // Route to log an activity
 router.post('/', logActivity);
 
 // Route to fetch all activities
-router.get('/', getActivities);
+router.get('/all', getActivities);
 
 // Route to delete an activity by ID
 router.delete('/:id', deleteActivity);
@@ -16,5 +23,8 @@ router.put('/:id', updateActivity);
 
 // Route to fetch activities for current date
 router.get('/today', getTodayActivities);
+
+// Route to fetch activities by range type or date range
+router.get('/range', getActivitiesByRange);
 
 module.exports = router;
