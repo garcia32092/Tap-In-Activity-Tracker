@@ -77,6 +77,7 @@
         [events]="events"
         [refresh]="refresh"
         (eventClicked)="eventClicked($event.event)"
+        (eventTimesChanged)="eventTimesChanged($event)"
         (hourSegmentClicked)="timeClicked($event.date)">
       </mwl-calendar-week-view>
 
@@ -87,6 +88,7 @@
         [events]="events"
         [refresh]="refresh"
         (eventClicked)="eventClicked($event.event)"
+        (eventTimesChanged)="eventTimesChanged($event)"
         (hourSegmentClicked)="timeClicked($event.date)">
       </mwl-calendar-day-view>
     </div>
@@ -105,6 +107,10 @@
     <label>Title:</label>
     <input type="text" [(ngModel)]="modalData.event.title" class="form-control" />
 
+    <!-- Category Field -->
+    <label>Category:</label>
+    <input type="text" [(ngModel)]="modalData.event.category" class="form-control" />
+
     <!-- Start Date/Time Field -->
     <label>Start:</label>
     <input type="datetime-local" [(ngModel)]="modalData.startInput" class="form-control" />
@@ -117,13 +123,33 @@
     <label>Description:</label>
     <textarea [(ngModel)]="modalData.event.meta.description" class="form-control"></textarea>
 
-    <!-- Category Field -->
-    <label>Category:</label>
-    <input type="text" [(ngModel)]="modalData.event.category" class="form-control" />
-
     <!-- Color Field -->
     <label>Color:</label>
     <input type="color" [(ngModel)]="primaryColor" class="form-control" />
+
+    <!-- Boolean Toggles -->
+    <div class="form-check form-switch mt-3">
+      <input type="checkbox" class="form-check-input" [(ngModel)]="modalData.event.allDay" id="allDayToggle">
+      <label class="form-check-label" for="allDayToggle">All Day</label>
+    </div>
+
+    <div class="form-check form-switch">
+      <input type="checkbox" class="form-check-input" [(ngModel)]="modalData.event.draggable" id="draggableToggle">
+      <label class="form-check-label" for="draggableToggle">Draggable</label>
+    </div>
+
+    <!-- Resizable Toggle for Both Before Start and After End -->
+    <div class="form-check form-switch">
+      <input
+        type="checkbox"
+        class="form-check-input"
+        [(ngModel)]="isResizable"
+        (change)="toggleResizable()"
+        id="resizableToggle"
+      />
+      <label class="form-check-label" for="resizableToggle">Resizable</label>
+    </div>
+
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-primary" (click)="saveChanges()">Save changes</button>
