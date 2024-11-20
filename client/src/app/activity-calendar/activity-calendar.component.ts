@@ -33,22 +33,7 @@ import {
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject } from 'rxjs';
 import { EventColor } from 'calendar-utils';
-import { combineDateAndTime, formatDateForInput } from '../shared/utils/date-utils';
-
-const colors: Record<string, EventColor> = {
-  red: {
-    primary: '#ad2121',
-    secondary: '#FAE3E3',
-  },
-  blue: {
-    primary: '#1e90ff',
-    secondary: '#D1E8FF',
-  },
-  yellow: {
-    primary: '#e3bc08',
-    secondary: '#FDF1BA',
-  },
-};
+import { combineDateAndTime, formatDateForDatabase, formatDateForInput, formatTimeForDatabase } from '../shared/utils/date-utils';
 
 @Component({
   selector: 'app-activity-calendar',
@@ -80,6 +65,12 @@ export class ActivityCalendarComponent {
       start: new Date(),
       title: '',
       color: { primary: '#000000', secondary: '#FFFFFF' },
+      allDay: false,
+      resizable: {
+        afterEnd: false,
+        beforeStart: false,
+      },
+      draggable: false,
       meta: { description: '' },
       category: ''
     } as CustomCalendarEvent,
@@ -89,11 +80,13 @@ export class ActivityCalendarComponent {
   dayClickTimeout: any;
   eventClickTimeout: any;
   selectedEventToDelete: CustomCalendarEvent | null = null;
+  isResizable: boolean = false;
 
   constructor(private activityService: ActivityService, private modal: NgbModal) {} // Inject the ActivityService
 
   ngOnInit() {
     // Fetch activities from the ActivityService
+    this.initializeResizable();
     this.getActivities();
   }
 
@@ -105,11 +98,12 @@ export class ActivityCalendarComponent {
         // Map the activities to the CalendarEvent format expected by angular-calendar
         this.events = data.map((activity) => {
           // Parse the activity_date as a Date object
-          const activityDate = new Date(activity.activity_date);
+          const activityStartDate = new Date(activity.activity_start_date);
+          const activityEndDate = new Date(activity.activity_end_date);
   
           // Create full start and end Date objects by combining activity_date with start_time and end_time
-          const startTime = combineDateAndTime(activityDate, activity.start_time);
-          const endTime = combineDateAndTime(activityDate, activity.end_time);
+          const startTime = combineDateAndTime(activityStartDate, activity.start_time);
+          const endTime = combineDateAndTime(activityEndDate, activity.end_time);
   
           return {
             id: activity.id,
@@ -121,6 +115,12 @@ export class ActivityCalendarComponent {
               secondary: this.adjustColorBrightness(activity.color, 1.3, 0.3)
             },
             actions: this.actions, // Action icons for edit/delete
+            allDay: activity.allday,
+            resizable: {
+              beforeStart: activity.resizable_beforestart,
+              afterEnd: activity.resizable_afterend,
+            },
+            draggable: activity.draggable,
             meta: {
               description: activity.description
             },
@@ -144,7 +144,31 @@ export class ActivityCalendarComponent {
   
     // Apply the brightness adjustment and include alpha
     return `rgba(${adjust(r)}, ${adjust(g)}, ${adjust(b)}, ${alpha})`;
-  }  
+  }
+
+  initializeResizable() {
+    // Set isResizable based on the current values of beforeStart and afterEnd
+    this.isResizable = !!(
+      this.modalData.event.resizable &&
+      this.modalData.event.resizable.beforeStart &&
+      this.modalData.event.resizable.afterEnd
+    );
+  
+    if (!this.modalData.event.resizable) {
+      this.modalData.event.resizable = { beforeStart: false, afterEnd: false };
+    }
+  }
+  
+  toggleResizable() {
+    // Ensure that resizable is defined
+    if (!this.modalData.event.resizable) {
+      this.modalData.event.resizable = { beforeStart: false, afterEnd: false };
+    }
+  
+    // Update both resizable.beforeStart and resizable.afterEnd based on isResizable
+    this.modalData.event.resizable.beforeStart = this.isResizable;
+    this.modalData.event.resizable.afterEnd = this.isResizable;
+  }
 
   actions: CalendarEventAction[] = [
     {
@@ -164,46 +188,7 @@ export class ActivityCalendarComponent {
     },
   ];
 
-  events: CustomCalendarEvent[] = [
-    {
-      start: subDays(startOfDay(new Date()), 1),
-      end: addDays(new Date(), 1),
-      title: 'A 3 day event',
-      color: colors['red'],
-      actions: this.actions,
-      allDay: true,
-      resizable: {
-        beforeStart: true,
-        afterEnd: true,
-      },
-      draggable: true,
-    },
-    {
-      start: startOfDay(new Date()),
-      title: 'An event with no end date',
-      color: colors['yellow'],
-      actions: this.actions,
-    },
-    {
-      start: subDays(endOfMonth(new Date()), 3),
-      end: addDays(endOfMonth(new Date()), 3),
-      title: 'A long event that spans 2 months',
-      color: colors['blue'],
-      allDay: true,
-    },
-    {
-      start: addHours(startOfDay(new Date()), 2),
-      end: addHours(new Date(), 2),
-      title: 'A draggable and resizable event',
-      color: colors['yellow'],
-      actions: this.actions,
-      resizable: {
-        beforeStart: true,
-        afterEnd: true,
-      },
-      draggable: true,
-    },
-  ];
+  events: CustomCalendarEvent[] = [];
 
   setView(view: CalendarView) {
     this.view = view;
@@ -284,24 +269,6 @@ export class ActivityCalendarComponent {
     }
     this.modal.dismissAll();
   }
-  
-  eventTimesChanged({
-    event,
-    newStart,
-    newEnd,
-  }: CalendarEventTimesChangedEvent): void {
-    this.events = this.events.map((iEvent) => {
-      if (iEvent === event) {
-        return {
-          ...event,
-          start: newStart,
-          end: newEnd,
-        };
-      }
-      return iEvent;
-    });
-    this.handleEvent('Dropped or resized', event);
-  }
 
   activeDayIsOpen: boolean = true;
 
@@ -338,24 +305,50 @@ export class ActivityCalendarComponent {
     console.log('Time clicked', date);
   };
 
-  addEvent(): void {
-    this.events = [
-      ...this.events,
-      {
-        title: 'New event',
-        start: startOfDay(new Date()),
-        end: endOfDay(new Date()),
-        color: colors['red'],
-        draggable: true,
-        resizable: {
-          beforeStart: true,
-          afterEnd: true,
-        },
-      },
-    ];
-  }
-
   closeOpenMonthViewDay() {
     this.activeDayIsOpen = false;
   }
+
+  eventTimesChanged({
+    event,
+    newStart,
+    newEnd,
+  }: CalendarEventTimesChangedEvent): void {
+    this.events = this.events.map((iEvent) => {
+      if (iEvent === event) {
+        return {
+          ...event,
+          start: newStart,
+          end: newEnd,
+        };
+      }
+      return iEvent;
+    });
+    this.handleEvent('Dropped or resized', event);
+    console.log('Dropped or resized', event);
+  
+    if (event.id !== undefined && newStart && newEnd) {
+      this.updateEventTime(Number(event.id), newStart, newEnd); // Cast event.id to number
+    } else {
+      console.error('Event ID, newStart, or newEnd is undefined, cannot update time in backend.');
+    }
+  }
+
+  updateEventTime(eventId: number, newStart: Date, newEnd: Date) {
+    const formattedStartDate = formatDateForDatabase(newStart);
+    const formattedEndDate = formatDateForDatabase(newEnd);
+    const formattedStartTime = formatTimeForDatabase(newStart);
+    const formattedEndTime = formatTimeForDatabase(newEnd);
+    console.log(formattedStartDate, formattedEndDate, formattedStartTime, formattedEndTime);
+  
+    // Call the ActivityService to update the event time in the backend
+    this.activityService.updateEventTime(eventId, formattedStartDate, formattedEndDate, formattedStartTime, formattedEndTime).subscribe(
+      (response) => {
+        console.log('Event time updated successfully:', response);
+      },
+      (error) => {
+        console.error('Error updating event time:', error);
+      }
+    );
+  }  
 }
