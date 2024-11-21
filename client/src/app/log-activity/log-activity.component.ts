@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivityService } from '../shared/services/activity.service';
 import { Validators } from '@angular/forms';
 import { activities, categories, activityToCategory, categoryColors } from '../shared/utils/activity-data';
+import { formatLocalDate, formatLocalTime } from '../shared/utils/date-utils';
 
 @Component({
   selector: 'app-log-activity',
@@ -27,30 +28,31 @@ export class LogActivityComponent implements OnInit {
   ngOnInit() {
     const now = new Date();
   
-    // Format the current date as YYYY-MM-DD without converting to UTC
-    const localDate = now.getFullYear() + '-' +
-      String(now.getMonth() + 1).padStart(2, '0') + '-' +
-      String(now.getDate()).padStart(2, '0');
+    // Helper function to format datetime-local values
+    const formatDateTimeLocal = (date: Date) => {
+      const datePart = formatLocalDate(date); // Format to 'YYYY-MM-DD'
+      const timePart = date.toTimeString().slice(0, 5); // Extract 'HH:mm'
+      return `${datePart}T${timePart}`; // Combine into 'YYYY-MM-DDTHH:mm'
+    };
   
-    // Get the most recent past hour (e.g., if it's 5:30pm, set it to 5:00pm)
+    // Get the most recent past hour and next hour
     const mostRecentHour = new Date(now);
-    mostRecentHour.setMinutes(0, 0, 0); // Set minutes and seconds to zero for a full hour
+    mostRecentHour.setMinutes(0, 0, 0); // Set minutes and seconds to zero
     const nextHour = new Date(mostRecentHour);
-    nextHour.setHours(nextHour.getHours() + 1); // Set the end time to the next full hour
+    nextHour.setHours(nextHour.getHours() + 1); // Next full hour
   
-    // Initialize form with local time defaults
+    // Initialize form with default datetime-local values
     this.activityForm = this.fb.group({
       activity: ['', Validators.required],
       customActivity: [''],
       category: ['', Validators.required],
       customCategory: [''],
-      activityDate: [localDate, Validators.required], // Set default date to current local date
-      start: [mostRecentHour.toTimeString().split(':').slice(0, 2).join(':'), Validators.required], // HH:mm format
-      end: [nextHour.toTimeString().split(':').slice(0, 2).join(':'), Validators.required], // HH:mm format
+      activityStartDateTime: [formatDateTimeLocal(mostRecentHour), Validators.required], // Combined start date/time
+      activityEndDateTime: [formatDateTimeLocal(nextHour), Validators.required], // Combined end date/time
       color: [''],
-      description: [''] // Optional description field
+      description: [''] // Optional description
     });
-  }
+  }  
 
   showSuccessNotification() {
     this.showSuccessMessage = true;
@@ -94,33 +96,33 @@ export class LogActivityComponent implements OnInit {
     const formData = this.activityForm.value;
     const activity = this.showCustomActivity ? formData.customActivity : formData.activity;
     const category = this.showCustomCategory ? formData.customCategory : formData.category;
-  
+
     console.log('Logging Activity:', {
       activity,
       category,
-      date: formData.activityDate,
-      start: formData.start,
-      end: formData.end,
-      description: formData.description, // Add the description field
+      startDateTime: formData.activityStartDateTime,
+      endDateTime: formData.activityEndDateTime,
+      description: formData.description,
       color: formData.color
     });
-  
+
     this.activityService.logActivity({
       activity,
       category,
       description: formData.description,
-      start: formData.start,
-      end: formData.end,
-      activityDate: formData.activityDate,
+      activityStartDate: formData.activityStartDateTime.split('T')[0], // Extract date
+      activityEndDate: formData.activityEndDateTime.split('T')[0], // Extract date
+      start: formData.activityStartDateTime.split('T')[1], // Extract time
+      end: formData.activityEndDateTime.split('T')[1], // Extract time
       color: formData.color
     }).subscribe(() => {
-      this.showSuccessNotification();
-      this.activityForm.get('activity')?.reset();
-      this.activityForm.get('category')?.reset();
-      this.activityForm.get('customActivity')?.reset();
-      this.activityForm.get('customCategory')?.reset();
-      this.activityForm.get('description')?.reset('');
-      this.activityForm.get('color')?.reset();
-    });
+        this.showSuccessNotification();
+        this.activityForm.get('activity')?.reset();
+        this.activityForm.get('category')?.reset();
+        this.activityForm.get('customActivity')?.reset();
+        this.activityForm.get('customCategory')?.reset();
+        this.activityForm.get('description')?.reset('');
+        this.activityForm.get('color')?.reset();
+      });
   }
 }
