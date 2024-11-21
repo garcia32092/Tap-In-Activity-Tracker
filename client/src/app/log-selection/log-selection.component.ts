@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { activities, getActivityData } from '../shared/utils/activity-data';
 import { ActivityService } from '../shared/services/activity.service';
+import { combineDateAndTime, formatDateForDatabase, formatTimeForDatabase, formatLocalDate, formatLocalTime } from '../shared/utils/date-utils';
 
 @Component({
   selector: 'app-log-selection',
@@ -40,6 +41,7 @@ export class LogSelectionComponent {
 
       // Push the activity with its details into the appropriate category
       this.groupedActivities[category].push({
+        id: -1,
         name: activity,
         inProgress: false,
         startTime: null as Date | null,
@@ -55,6 +57,17 @@ export class LogSelectionComponent {
       this.toggles.socialMedia = activities.some(activity => activity.activity === 'Social Media');
       this.toggles.music = activities.some(activity => activity.activity === 'Making Music');
       this.toggles.allGoals = this.toggles.education && this.toggles.exercise && this.toggles.music && this.toggles.socialMedia;
+  
+      // Update the groupedActivities with `inProgress` status
+      Object.values(this.groupedActivities).flat().forEach(groupedActivity => {
+        const matchingActivity = activities.find(activity => activity.activity === groupedActivity.name);
+        console.log('Matching activity:', matchingActivity);
+        if (matchingActivity) {
+          groupedActivity.id = matchingActivity.id;
+          groupedActivity.inProgress = matchingActivity.inprogress;
+          console.log('Grouped activity:', groupedActivity);
+        }
+      });
     });
   }
 
@@ -62,48 +75,65 @@ export class LogSelectionComponent {
     const activity = Object.values(this.groupedActivities).flat().find(act => act.name === activityName);
     if (activity) {
       const now = new Date();
-  
       activity.inProgress = true;
       activity.startTime = now;
   
       this.activityService.logActivity({
         activity: activityName,
         category: getActivityData(activityName).category,
-        start: this.formatLocalTime(now),
-        activityDate: this.formatLocalDate(now),
-        end: null,
+        start: formatLocalTime(now),
+        activityStartDate: formatLocalDate(now),
+        activityEndDate: formatLocalDate(now),
+        end: formatLocalTime(now),
         color: activity.color,
-        description: ''
-      }).subscribe(() => console.log(`${activityName} started at ${this.formatLocalDate(now)}`));
+        description: '', 
+        inProgress: true, // Set to true when starting
+        allDay: false,
+        draggable: false,
+        resizable_beforeStart: false,
+        resizable_afterEnd: false
+      }).subscribe(() => console.log(`${activityName} started at ${formatLocalDate(now)}`));
     }
   }
   
-  endActivity(activityName: string) {
-    const activity = Object.values(this.groupedActivities).flat().find(act => act.name === activityName);
-    if (activity && activity.startTime) {
-      const now = new Date();
-      this.activityService.logActivity({
-        activity: activityName,
-        category: getActivityData(activityName).category,
-        start: this.formatLocalTime(activity.startTime),
-        end: this.formatLocalTime(now),
-        activityDate: this.formatLocalDate(now),
-        color: activity.color,
-        description: ''
-      }).subscribe(() => console.log(`${activityName} ended at ${this.formatLocalDate(now)}`));
-  
-      activity.inProgress = false;
-      activity.startTime = null;
+  endActivity(activityId: number) {
+    if (!activityId) {
+      console.error('Activity ID is undefined!');
+      return;
     }
-  }
   
-  // Format to local time
-  formatLocalTime(date: Date): string {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
+    this.activityService.getActivityById(activityId).subscribe(
+      (activity) => {
+        console.log('Activity selected to end:', activity);
+        const now = new Date();
   
-  // Format to local date
-  formatLocalDate(date: Date): string {
-    return date.toLocaleDateString('en-CA'); // 'en-CA' for YYYY-MM-DD format
-  }  
+        // Update the activity
+        const updatedActivity = {
+          ...activity,
+          description: activity.description,
+          inProgress: false,
+          end_time: formatLocalTime(now),
+          activityEndDate: formatLocalDate(now),
+        };
+
+        console.log('Activity to update:', updatedActivity);
+  
+        this.activityService.endActivity(updatedActivity.id, updatedActivity.end_time).subscribe(() => {
+          console.log(`Activity ${activity.activity} ended successfully.`);
+  
+          // Update local state
+          const groupedActivity = Object.values(this.groupedActivities).flat().find(
+            act => act.id === activityId
+          );
+          if (groupedActivity) {
+            groupedActivity.inProgress = false;
+            groupedActivity.startTime = null;
+          }
+        });
+      },
+      (error) => {
+        console.error('Error fetching activity by ID:', error);
+      }
+    );
+  }
 }
