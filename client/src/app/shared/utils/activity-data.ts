@@ -75,8 +75,8 @@ export const categoryColors: Record<string, string> = {
   'Cooking & Eating': '#ff8c00',
   'Sleep': '#708090',
   'Household Tasks': '#8b4513',
-  'Friends & Family': '#ff1493',
-  'Niquess': '#00ccff',
+  'Friends & Family': '#00ccff',
+  'Niquess': '#ff1493',
   'Waste of Time': '#4c00ff',
   // Add more colors if needed
 };
