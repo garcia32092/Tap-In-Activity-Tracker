@@ -60,3 +60,13 @@ export function combineDateAndTime(date: Date, time: string): Date {
     combinedDate.setHours(hours, minutes, seconds || 0);
     return combinedDate;
   }
+
+  // Format to local time
+  export function formatLocalTime(date: Date): string {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  // Format to local date
+  export function formatLocalDate(date: Date): string {
+    return date.toLocaleDateString('en-CA'); // 'en-CA' for YYYY-MM-DD format
+  }
