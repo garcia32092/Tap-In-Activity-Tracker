@@ -104,12 +104,45 @@
   </div>
   <div class="modal-body">
     <!-- Title Field -->
-    <label>Title:</label>
-    <input type="text" [(ngModel)]="modalData.event.title" class="form-control" />
+    <label for="activity">Activity:</label>
+    <select
+      id="activity"
+      [(ngModel)]="modalData.event.title"
+      class="form-control"
+      (change)="checkActivity($event)"
+    >
+      <option *ngFor="let activity of activities" [value]="activity">{{ activity }}</option>
+      <option value="Other">Other</option>
+    </select>
+    <div *ngIf="modalData.event.title === 'Other'" class="mt-2">
+      <input
+        type="text"
+        id="customActivity"
+        [(ngModel)]="modalData.event.meta.customActivity"
+        class="form-control"
+        placeholder="Enter custom activity"
+      />
+    </div>
 
     <!-- Category Field -->
-    <label>Category:</label>
-    <input type="text" [(ngModel)]="modalData.event.category" class="form-control" />
+    <label for="category">Category:</label>
+    <select
+      id="category"
+      [(ngModel)]="modalData.event.category"
+      class="form-control"
+      (change)="checkCategory($event)"
+    >
+      <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+      <option value="Other">Other</option>
+    </select>
+    <div *ngIf="modalData.event.category === 'Other'" class="mt-2">
+      <input
+        type="text"
+        [(ngModel)]="modalData.event.meta.customCategory"
+        class="form-control"
+        placeholder="Enter custom category"
+      />
+    </div>
 
     <!-- Start Date/Time Field -->
     <label>Start:</label>
@@ -124,8 +157,15 @@
     <textarea [(ngModel)]="modalData.event.meta.description" class="form-control"></textarea>
 
     <!-- Color Field -->
-    <label>Color:</label>
-    <input type="color" [(ngModel)]="primaryColor" class="form-control" />
+    <label for="color">Color:</label>
+    <input
+      id="color"
+      type="color"
+      [(ngModel)]="primaryColor"
+      class="form-control"
+      (change)="modalData.event.color && (modalData.event.color.primary = primaryColor)"
+    />
+
 
     <!-- Boolean Toggles -->
     <div class="form-check form-switch mt-3">
