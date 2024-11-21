@@ -34,6 +34,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject } from 'rxjs';
 import { EventColor } from 'calendar-utils';
 import { combineDateAndTime, formatDateForDatabase, formatDateForInput, formatTimeForDatabase } from '../shared/utils/date-utils';
+import { activities, activityToCategory, categories, categoryColors, getActivityData } from '../shared/utils/activity-data';
 
 @Component({
   selector: 'app-activity-calendar',
@@ -74,7 +75,11 @@ export class ActivityCalendarComponent {
       meta: { description: '' },
       category: ''
     } as CustomCalendarEvent,
-  };  
+  };
+  activities = activities;
+  categories = categories;
+  activityToCategory: Record<string, string> = activityToCategory;
+  categoryColors: Record<string, string> = categoryColors;
   primaryColor: string = '#000000';
   refresh = new Subject<void>();
   dayClickTimeout: any;
@@ -209,14 +214,54 @@ export class ActivityCalendarComponent {
   }
   
   eventDoubleClicked(event: CustomCalendarEvent): void {
+    const { title, category, start, end, meta, color } = event;
     this.modalData = {
-      action: 'View Details',
-      event: { ...event },
-      startInput: formatDateForInput(event.start),
-      endInput: formatDateForInput(event.end)
+      action: 'Edit Activity',
+      event: {
+        ...event,
+        title: title || '',
+        category: category || '',
+        meta: meta || { description: '' },
+        color: color || { primary: '#000000', secondary: '#FFFFFF' }, // Ensure color is initialized
+      },
+      startInput: formatDateForInput(start),
+      endInput: formatDateForInput(end),
     };
-    this.primaryColor = this.modalData.event.color?.primary || '#000000';
+    this.primaryColor = this.modalData.event.color?.primary || '#00000';
     this.modal.open(this.modalContent, { size: 'lg' });
+  }
+  
+  timeClicked(date: Date) {
+    if (this.eventClickTimeout) {
+      clearTimeout(this.eventClickTimeout);
+      this.eventClickTimeout = null;
+      const defaultColor = { primary: '#000000', secondary: '#FFFFFF' };
+    
+      this.modalData = {
+        action: 'Add Activity',
+        event: {
+          title: '',
+          category: '',
+          start: date,
+          end: new Date(date.getTime() + 60 * 60 * 1000), // Default to 1 hour later
+          color: defaultColor,
+          meta: { description: '' },
+          allDay: false,
+          resizable: { beforeStart: false, afterEnd: false },
+          draggable: false,
+        },
+        startInput: formatDateForInput(date),
+        endInput: formatDateForInput(new Date(date.getTime() + 60 * 60 * 1000)),
+      };
+      this.primaryColor = defaultColor.primary;
+      this.modal.open(this.modalContent, { size: 'lg' });
+    } else {
+      // Single click: Just log the clicked time
+      this.eventClickTimeout = setTimeout(() => {
+        this.eventClickTimeout = null;
+        console.log('Time clicked', date);
+      }, 300);
+    }
   }
 
   handleEvent(action: string, event: CustomCalendarEvent): void {
@@ -227,28 +272,64 @@ export class ActivityCalendarComponent {
   }
   
   saveChanges() {
+    const isNewActivity = !this.modalData.event.id;
+  
     this.modalData.event.start = new Date(this.modalData.startInput || '');
     this.modalData.event.end = new Date(this.modalData.endInput || '');
-
     this.modalData.event.color = {
       primary: this.primaryColor,
-      secondary: this.adjustColorBrightness(this.primaryColor, 1.3, 0.3)
-    }
+      secondary: this.adjustColorBrightness(this.primaryColor, 1.3, 0.3),
+    };
+
+    const activityName = this.modalData.event.title === 'Other' ? this.modalData.event.meta.customActivity : this.modalData.event.title;
+    const categoryName = this.modalData.event.category === 'Other' ? this.modalData.event.meta.customCategory : this.modalData.event.category;
   
-    this.activityService.updateActivity(this.modalData.event).subscribe(
-      (updatedEvent) => {
-        // Update the event in the local events array
-        this.events = this.events.map(event => 
-          event.id === updatedEvent.activity.id ? updatedEvent.activity : event
-        );
-        console.log('Event saved:', updatedEvent);
-        this.modal.dismissAll();
-        // Re-fetch all activities from the server after deletion
-        this.getActivities();
-      },
-      (error) => console.error('Error updating activity:', error)
-    );
-  }
+    if (isNewActivity) {
+      // Create new activity
+      this.activityService.logActivity({
+        activity: activityName,
+        category: categoryName,
+        description: this.modalData.event.meta.description,
+        activityStartDate: formatDateForDatabase(this.modalData.event.start),
+        activityEndDate: formatDateForDatabase(this.modalData.event.end),
+        start: formatTimeForDatabase(this.modalData.event.start),
+        end: formatTimeForDatabase(this.modalData.event.end),
+        color: this.modalData.event.color.primary,
+        allDay: this.modalData.event.allDay,
+        draggable: this.modalData.event.draggable,
+        resizable_beforeStart: this.modalData.event.resizable?.beforeStart,
+        resizable_afterEnd: this.modalData.event.resizable?.afterEnd,
+        inProgress: false,
+      }).subscribe(
+        (newActivity) => {
+          this.events.push({
+            ...newActivity,
+            start: this.modalData.event.start,
+            end: this.modalData.event.end,
+          });
+          console.log('New activity added:', newActivity);
+          this.refresh.next();
+          this.modal.dismissAll();
+          this.getActivities();
+        },
+        (error) => console.error('Error adding new activity:', error)
+      );
+    } else {
+      // Update existing activity
+      this.activityService.updateActivity(this.modalData.event).subscribe(
+        (updatedEvent) => {
+          this.events = this.events.map(event =>
+            event.id === updatedEvent.id ? updatedEvent : event
+          );
+          console.log('Event saved:', updatedEvent);
+          this.refresh.next();
+          this.modal.dismissAll();
+          this.getActivities();
+        },
+        (error) => console.error('Error updating activity:', error)
+      );
+    }
+  }  
 
   openDeleteConfirmation(event: CustomCalendarEvent) {
     this.selectedEventToDelete = event;
@@ -298,13 +379,6 @@ export class ActivityCalendarComponent {
     console.log('Day clicked', date);
   }
 
-  timeClicked(date: Date) {
-    if (isSameMonth(date, this.viewDate)) {
-      this.viewDate = date;
-    }
-    console.log('Time clicked', date);
-  };
-
   closeOpenMonthViewDay() {
     this.activeDayIsOpen = false;
   }
@@ -350,5 +424,34 @@ export class ActivityCalendarComponent {
         console.error('Error updating event time:', error);
       }
     );
-  }  
+  }
+
+  checkActivity(event: any) {
+    const selectedActivity = event.target.value;
+  
+    if (selectedActivity === 'Other') {
+      this.modalData.event.category = ''; // Reset category for custom activities
+      this.modalData.event.color = { primary: '#000000', secondary: '#FFFFFF' }; // Default color for custom activities
+    } else {
+      const { category, color } = getActivityData(selectedActivity);
+      this.modalData.event.category = category;
+      this.modalData.event.color = { primary: color, secondary: this.adjustColorBrightness(color, 1.3, 0.3) };
+    }
+
+    // Update the primary color for the color picker
+    this.primaryColor = this.modalData.event.color?.primary || '#00000';
+  }
+  
+  checkCategory(event: any) {
+    const selectedCategory = event.target.value;
+    const isCustomCategory = selectedCategory === 'Other';
+  
+    if (!isCustomCategory) {
+      const color = categoryColors[selectedCategory];
+      this.modalData.event.color = { primary: color, secondary: this.adjustColorBrightness(color, 1.3, 0.3) };
+    }
+
+    // Update the primary color for the color picker
+    this.primaryColor = this.modalData.event.color?.primary || '#00000';
+  }
 }
