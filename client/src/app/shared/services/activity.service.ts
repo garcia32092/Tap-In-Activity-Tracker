@@ -19,12 +19,20 @@ export class ActivityService {
     return this.http.get<any[]>(`${this.apiUrl}/all`);
   }
 
+  getActivityById(activityId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/id=${activityId}`);
+  }
+
   updateActivity(activity: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/${activity.id}`, activity);
   }
 
   deleteActivity(activityId: string | number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${activityId}`);
+  }
+
+  endActivity(activityId: number, endTime: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${activityId}/end`, { endTime });
   }
 
   getTodayActivities(): Observable<any[]> {
@@ -39,4 +47,8 @@ export class ActivityService {
     const params = new HttpParams().set('start', start).set('end', end);
     return this.http.get<any[]>(`${this.apiUrl}/range`, { params });
   }
+
+  updateEventTime(eventId: number, startDate: string, endDate: string, startTime: string, endTime: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${eventId}/time`, { startDate, endDate, startTime, endTime });
+  }  
 }
