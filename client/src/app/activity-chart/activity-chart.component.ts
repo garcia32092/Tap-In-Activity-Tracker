@@ -13,9 +13,10 @@ import { CommonModule } from '@angular/common';
 })
 export class ActivityChartComponent implements OnInit {
   @ViewChild('activityChart', { static: true }) activityChartRef!: ElementRef<HTMLCanvasElement>;
-  selectedRange: 'day' | 'week' | 'month' | 'year' = 'month'; // Custom removed here
+  selectedRange: 'day' | 'week' | 'month' | 'year' = 'day';
   selectedChartType: 'pie' | 'doughnut' | 'line' | 'bar' = 'pie';
-  isCustomRange = false; // New boolean for custom range handling
+  isCustomRange = false;
+  includeTimeNotLogged = true; // Toggle for "Time Not Logged"
   dateRangeForm!: FormGroup;
   chart!: Chart<'pie' | 'doughnut' | 'line' | 'bar', number[], string>;
 
@@ -26,7 +27,8 @@ export class ActivityChartComponent implements OnInit {
   ngOnInit(): void {
     this.dateRangeForm = this.fb.group({
       startDate: [''],
-      endDate: ['']
+      endDate: [''],
+      includeTimeNotLogged: [this.includeTimeNotLogged]
     });
     this.initializeChart();
     this.updateChartForRange(this.selectedRange);
@@ -49,7 +51,7 @@ export class ActivityChartComponent implements OnInit {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: true, position: 'top' }
+            legend: { display: true, position: 'bottom' }
           },
         }
       });
@@ -78,10 +80,9 @@ export class ActivityChartComponent implements OnInit {
     this.selectedChartType = target.value as 'pie' | 'doughnut' | 'line' | 'bar';
 
     if (this.chart) {
-      this.chart.destroy(); // Destroy the existing chart instance
+      this.chart.destroy();
     }
-    this.initializeChart(); // Re-initialize with the new chart type
-
+    this.initializeChart();
     if (!this.isCustomRange) {
       this.updateChartForRange(this.selectedRange);
     } else {
@@ -99,10 +100,14 @@ export class ActivityChartComponent implements OnInit {
     }
   }
 
+  onIncludeTimeNotLoggedChange(event: Event): void {
+    this.includeTimeNotLogged = (event.target as HTMLInputElement).checked;
+    this.updateChartForRange(this.selectedRange);
+  }
+
   updateChartForRange(range: 'day' | 'week' | 'month' | 'year'): void {
     this.activityService.getActivitiesByRange(range).subscribe((data: any[]) => {
-      this.updateChartData(data);
-      console.log(`Activities by ${range}:`, data);
+      this.updateChartData(data, range);
     });
   }
 
@@ -112,37 +117,38 @@ export class ActivityChartComponent implements OnInit {
     });
   }
 
-  updateChartData(data: any[]): void {
+  updateChartData(data: any[], range?: 'day' | 'week' | 'month' | 'year'): void {
     if (this.chart) {
-        // Calculate `duration_minutes` if not provided
-        data.forEach(item => {
-            if (!item.duration_minutes && item.start_time && item.end_time) {
-                const start = new Date(`1970-01-01T${item.start_time}Z`).getTime();
-                const end = new Date(`1970-01-01T${item.end_time}Z`).getTime();
-                item.duration_minutes = (end - start) / (1000 * 60); // Convert milliseconds to minutes
-            }
-        });
+        const rangeMinutes = {
+            day: 1440,
+            week: 10080,
+            month: 43200,
+            year: 525600
+        };
+        
+        const totalRangeMinutes = range ? rangeMinutes[range] : 0;
+        const totalLoggedMinutes = data.reduce((sum, item) => sum + (parseFloat(item.total_duration) || 0), 0);
+        const timeNotLogged = totalRangeMinutes - totalLoggedMinutes;
 
-        // Recalculate total minutes based on updated `duration_minutes`
-        const totalMinutes = data.reduce((sum, item) => sum + (item.duration_minutes || 0), 0);
-        console.log('Total Minutes:', totalMinutes);
+        let totalMinutesForPercentage = this.includeTimeNotLogged ? totalRangeMinutes : totalLoggedMinutes;
 
-        if (totalMinutes > 0) {
-            // Update chart data only if totalMinutes is valid
-            this.chart.data.labels = data.map(item => item.activity);
-            this.chart.data.datasets[0].data = data.map(item => 
-                +((item.duration_minutes / totalMinutes) * 100).toFixed(2)
-            );
-            this.chart.data.datasets[0].backgroundColor = data.map(item => item.color || '#cccccc');
-        } else {
-            console.warn('No data to display, totalMinutes is zero.');
-            this.chart.data.labels = [];
-            this.chart.data.datasets[0].data = [];
-            this.chart.data.datasets[0].backgroundColor = [];
+        // Set chart data for each category
+        const labels = data.map(item => item.category);
+        const values = data.map(item => +((parseFloat(item.total_duration) / totalMinutesForPercentage) * 100).toFixed(2));
+        const colors = data.map(item => item.color || '#cccccc');
+
+        // Add "Time Not Logged" if enabled and valid
+        if (this.includeTimeNotLogged && timeNotLogged > 0) {
+            labels.push('Time Not Logged');
+            values.push(+((timeNotLogged / totalMinutesForPercentage) * 100).toFixed(2));
+            colors.push('#e0e0e0'); // Default color for "Time Not Logged"
         }
 
-        console.log('Processed chart data:', this.chart.data);
+        // Update the chart
+        this.chart.data.labels = labels;
+        this.chart.data.datasets[0].data = values;
+        this.chart.data.datasets[0].backgroundColor = colors;
         this.chart.update();
     }
-  } 
+  }
 }

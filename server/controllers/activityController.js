@@ -10,8 +10,14 @@ pool.query(
     description TEXT,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    activity_date DATE NOT NULL,
-    color TEXT,
+    activity_start_date DATE NOT NULL,
+    activity_end_date DATE NOT NULL,
+    color VARCHAR(7),
+    inProgress BOOLEAN DEFAULT FALSE NOT NULL,
+    allDay BOOLEAN DEFAULT FALSE NOT NULL,
+    draggable BOOLEAN DEFAULT FALSE NOT NULL,
+    resizable_beforeStart BOOLEAN DEFAULT FALSE NOT NULL,
+    resizable_afterEnd BOOLEAN DEFAULT FALSE NOT NULL,
     date_created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   )`,
   (err) => {
@@ -25,10 +31,11 @@ pool.query(
 
 // Controller to log an activity
 const logActivity = (req, res) => {
-  const { activity, category, description, start, end, activityDate, color } = req.body;
+  const { activity, category, description, start, end, activityStartDate, activityEndDate, color, inProgress, allDay, draggable, resizable_beforeStart, resizable_afterEnd } = req.body;
   pool.query(
-    'INSERT INTO activities (activity, category, description, start_time, end_time, activity_date, color) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-    [activity, category, description, start, end, activityDate, color],
+    `INSERT INTO activities (activity, category, description, start_time, end_time, activity_start_date, activity_end_date, color, inProgress, allDay, draggable, resizable_beforeStart, resizable_afterEnd)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+    [activity, category, description, start, end, activityStartDate, activityEndDate, color, inProgress, allDay, draggable, resizable_beforeStart, resizable_afterEnd],
     (err, result) => {
       if (err) {
         console.error('Error logging activity:', err);
@@ -42,7 +49,7 @@ const logActivity = (req, res) => {
 
 // Controller to fetch all activities
 const getActivities = (req, res) => {
-  pool.query('SELECT * FROM activities ORDER BY activity_date DESC', (err, result) => {
+  pool.query('SELECT * FROM activities ORDER BY activity_start_date DESC', (err, result) => {
     if (err) {
       console.error('Error fetching activities:', err);
       res.status(500).json({ error: 'Database error' });
@@ -50,6 +57,25 @@ const getActivities = (req, res) => {
       res.json(result.rows);
     }
   });
+};
+
+const getActivityById = (req, res) => {
+  const { id } = req.params;
+
+  pool.query(
+    'SELECT * FROM activities WHERE id = $1',
+    [id],
+    (err, result) => {
+      if (err) {
+        console.error('Error fetching activity by ID:', err);
+        res.status(500).json({ error: 'Database error' });
+      } else if (result.rowCount === 0) {
+        res.status(404).json({ error: 'Activity not found' });
+      } else {
+        res.status(200).json(result.rows[0]);
+      }
+    }
+  );
 };
 
 // Controller to delete an activity
@@ -75,21 +101,24 @@ const deleteActivity = (req, res) => {
 // Controller to update an activity
 const updateActivity = (req, res) => {
   const { id } = req.params;
-  const { title, category, meta, start, end, color } = req.body;
+  const { title, category, meta, start, end, color, allDay, draggable, resizable } = req.body;
 
   const activity = title;
   const description = meta.description;
   const formattedStart = format(new Date(start), 'HH:mm:ss');
   const formattedEnd = format(new Date(end), 'HH:mm:ss');
-  const formattedActivityDate = format(new Date(start), 'yyyy-MM-dd');
+  const formattedActivityStartDate = format(new Date(start), 'yyyy-MM-dd');
+  const formattedActivityEndDate = format(new Date(end), 'yyyy-MM-dd');
   const primaryColor = color.primary;
+  const resizable_beforeStart = resizable.beforeStart;
+  const resizable_afterEnd = resizable.afterEnd;
 
   pool.query(
-    `UPDATE activities 
-     SET activity = $1, category = $2, description = $3, start_time = $4, end_time = $5, activity_date = $6, color = $7 
-     WHERE id = $8 
+    `UPDATE activities
+     SET activity = $1, category = $2, description = $3, start_time = $4, end_time = $5, activity_start_date = $6, activity_end_date = $7, color = $8, allDay = $9, draggable = $10, resizable_beforeStart = $11, resizable_afterEnd = $12
+     WHERE id = $13
      RETURNING *`,
-    [activity, category, description, formattedStart, formattedEnd, formattedActivityDate, primaryColor, id],
+    [activity, category, description, formattedStart, formattedEnd, formattedActivityStartDate, formattedActivityEndDate, primaryColor, allDay, draggable, resizable_beforeStart, resizable_afterEnd, id],
     (err, result) => {
       if (err) {
         console.error('Error updating activity:', err);
@@ -98,6 +127,29 @@ const updateActivity = (req, res) => {
         res.status(404).json({ error: 'Activity not found' });
       } else {
         res.status(200).json({ message: 'Activity updated successfully', activity: result.rows[0] });
+      }
+    }
+  );
+};
+
+const endActivity = (req, res) => {
+  const { id } = req.params;
+  const { endTime } = req.body;
+
+  pool.query(
+    `UPDATE activities
+     SET inprogress = false, end_time = $1
+     WHERE id = $2
+     RETURNING *`,
+    [endTime, id],
+    (err, result) => {
+      if (err) {
+        console.error('Error ending activity:', err);
+        res.status(500).json({ error: 'Database error' });
+      } else if (result.rowCount === 0) {
+        res.status(404).json({ error: 'Activity not found' });
+      } else {
+        res.status(200).json({ message: 'Activity ended successfully', activity: result.rows[0] });
       }
     }
   );
@@ -112,7 +164,7 @@ const getTodayActivities = (req, res) => {
     String(now.getDate()).padStart(2, '0');
   
   pool.query(
-    'SELECT * FROM activities WHERE activity_date = $1',
+    'SELECT * FROM activities WHERE activity_start_date = $1',
     [today],
     (err, result) => {
       if (err) {
@@ -125,32 +177,41 @@ const getTodayActivities = (req, res) => {
   );
 };
 
-// Controller function to get activities by range
+// Controller function to get activities by range, aggregated by category
 const getActivitiesByRange = async (req, res) => {
   const { range, start, end } = req.query;
-  console.log('Range:', range);
-  console.log('Start:', start);
-  console.log('End:', end);
   let startDate, endDate;
 
   try {
     if (range) {
-      // Get dates based on range type (day, week, month)
-      ({ startDate, endDate } = getDateRange(range));
+      ({ startDate, endDate } = getDateRange(range)); // Calculate startDate and endDate based on range
     } else if (start && end) {
-      // Use provided start and end dates for custom range
       startDate = new Date(start);
-      console.log(startDate);
       endDate = new Date(end);
-      console.log(endDate);
     } else {
       return res.status(400).json({ error: 'Invalid parameters' });
     }
 
     const query = `
-      SELECT * FROM activities
-      WHERE activity_date BETWEEN $1 AND $2
-      ORDER BY activity_date DESC
+      WITH activity_segments AS (
+          SELECT
+              category,
+              color,
+              CASE
+                  WHEN activity_start_date = activity_end_date THEN
+                      EXTRACT(EPOCH FROM (end_time - start_time)) / 60
+                  ELSE
+                      EXTRACT(EPOCH FROM (end_time)) / 60 + 
+                      (EXTRACT(EPOCH FROM (time '24:00:00') - start_time) / 60) +
+                      (EXTRACT(DAY FROM age(activity_end_date, activity_start_date)) - 1) * 1440
+              END AS total_duration
+          FROM activities
+          WHERE activity_start_date BETWEEN $1 AND $2
+      )
+      SELECT category, color, SUM(total_duration) AS total_duration
+      FROM activity_segments
+      GROUP BY category, color
+      ORDER BY category;
     `;
 
     const result = await pool.query(query, [startDate, endDate]);
@@ -184,4 +245,33 @@ const getDateRange = (range) => {
   return { startDate, endDate: now };
 };
 
-module.exports = { logActivity, getActivities, deleteActivity, updateActivity, getTodayActivities,  getActivitiesByRange };
+const updateEventTime = (req, res) => {
+  const { id } = req.params;
+  const { startDate, endDate, startTime, endTime } = req.body;
+  console.log('Updating event time:', {
+    start_date: startDate,
+    end_date: endDate,
+    start_time: startTime,
+    end_time: endTime,
+  });
+
+  pool.query(
+    `UPDATE activities
+     SET activity_start_date = $1, activity_end_date = $2, start_time = $3, end_time = $4
+     WHERE id = $5
+     RETURNING *`,
+    [startDate, endDate, startTime, endTime, id],
+    (err, result) => {
+      if (err) {
+        console.error('Error updating event time:', err);
+        res.status(500).json({ error: 'Database error' });
+      } else if (result.rowCount === 0) {
+        res.status(404).json({ error: 'Activity not found' });
+      } else {
+        res.status(200).json({ message: 'Activity time updated successfully', activity: result.rows[0] });
+      }
+    }
+  );
+};
+
+module.exports = { logActivity, getActivities, getActivityById, deleteActivity, updateActivity, endActivity, getTodayActivities,  getActivitiesByRange, updateEventTime };

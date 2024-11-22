@@ -38,26 +38,37 @@
     </div>
   </div>
 
-  <!-- Date Field -->
-  <div class="form-group">
-    <label for="activityDate">Date</label>
-    <input id="activityDate" class="form-control" formControlName="activityDate" type="date" [class.is-invalid]="activityForm.get('activityDate')?.touched && activityForm.get('activityDate')?.invalid">
-    <!-- Display error if date is not selected -->
-    <div *ngIf="activityForm.get('activityDate')?.touched && activityForm.get('activityDate')?.invalid" class="invalid-feedback">
-      Date is required.
-    </div>
+  <!-- Start Date/Time Field -->
+<div class="form-group">
+  <label for="activityStartDateTime">Start:</label>
+  <input 
+    id="activityStartDateTime" 
+    class="form-control" 
+    formControlName="activityStartDateTime" 
+    type="datetime-local" 
+    [class.is-invalid]="activityForm.get('activityStartDateTime')?.touched && activityForm.get('activityStartDateTime')?.invalid" 
+  />
+  <!-- Display error if start date/time is not selected -->
+  <div *ngIf="activityForm.get('activityStartDateTime')?.touched && activityForm.get('activityStartDateTime')?.invalid" class="invalid-feedback">
+    Start date/time is required.
   </div>
+</div>
 
-  <!-- Start and End Time Fields -->
-  <div class="form-group">
-    <label for="start">Start Time</label>
-    <input id="start" class="form-control" formControlName="start" type="time" required />
+<!-- End Date/Time Field -->
+<div class="form-group">
+  <label for="activityEndDateTime">End:</label>
+  <input 
+    id="activityEndDateTime" 
+    class="form-control" 
+    formControlName="activityEndDateTime" 
+    type="datetime-local" 
+    [class.is-invalid]="activityForm.get('activityEndDateTime')?.touched && activityForm.get('activityEndDateTime')?.invalid" 
+  />
+  <!-- Display error if end date/time is not selected -->
+  <div *ngIf="activityForm.get('activityEndDateTime')?.touched && activityForm.get('activityEndDateTime')?.invalid" class="invalid-feedback">
+    End date/time is required.
   </div>
-
-  <div class="form-group">
-    <label for="end">End Time</label>
-    <input id="end" class="form-control" formControlName="end" type="time" required />
-  </div>
+</div>
 
   <!-- Optional Description Field -->
   <div class="form-group">
